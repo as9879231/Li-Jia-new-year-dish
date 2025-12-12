@@ -1,0 +1,355 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+:root {
+    --primary-red: #8B0000;
+    --primary-gold: #BC9E56;
+    --bg-cream: #FDFBF7;
+    --text-dark: #333333;
+    --white: #FFFFFF;
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    --status-new-bg: #fee2e2;
+    --status-new-text: #dc2626;
+    --status-completed-bg: #e8f5e9;
+    --status-completed-text: #2e7d32;
+    --status-cancelled-bg: #f3f4f6;
+    --status-cancelled-text: #4b5563;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    touch-action: manipulation;
+    /* Disables double-tap zoom on clickable elements */
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Noto Serif TC', serif;
+    background-color: var(--bg-cream);
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+/* Utilities */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 24px;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-family: 'Noto Sans TC', sans-serif;
+    white-space: nowrap;
+    /* Prevents text from wrapping */
+}
+
+.btn-primary {
+    background-color: var(--primary-red);
+    color: var(--white);
+    border: 1px solid var(--primary-red);
+}
+
+.btn-primary:hover {
+    background-color: #a00000;
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: var(--primary-red);
+    border: 1px solid var(--primary-red);
+}
+
+.btn-outline:hover {
+    background-color: var(--primary-red);
+    color: var(--white);
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media print {
+
+    /* Reset Body Layout */
+    body {
+        display: block !important;
+        background: white !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* DEFAULT: Hide all direct children (Sidebar, Main, Modals) */
+    body>* {
+        display: none !important;
+    }
+
+    /* === SCENARIO A: Printing Kitchen Stats === */
+    /* When body has .printing-stats, show Main Content */
+    body.printing-stats .main-content {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        visibility: visible !important;
+    }
+
+    /* Inside Main Content, only show Stats Section */
+    body.printing-stats .main-content>* {
+        display: none !important;
+    }
+
+    body.printing-stats #statsSection {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    /* Ensure text color is black */
+    body.printing-stats h3,
+    body.printing-stats p,
+    body.printing-stats th,
+    body.printing-stats td {
+        color: black !important;
+    }
+
+    /* === SCENARIO B: Printing Order Confirmation (Customer) === */
+    /* If NOT stats mode, and #confirmationModal is active (handled by flex logic usually) */
+    /* We force it to show if it's the target, but since we rely on `window.print()` triggered by user when modal is open */
+    body:not(.printing-stats) #confirmationModal {
+        display: flex !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        background: white !important;
+        z-index: 9999 !important;
+        visibility: visible !important;
+    }
+
+    body:not(.printing-stats) #confirmationModal .modal-content {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* Common Hides */
+    button,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--white);
+    padding: 40px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+    font-family: 'Noto Sans TC', sans-serif;
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: 'Noto Sans TC', sans-serif;
+}
+
+.form-textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+/* Notification Toast */
+.toast {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: var(--text-dark);
+    color: #fff;
+    text-align: center;
+    border-radius: 4px;
+    padding: 16px;
+    position: fixed;
+    z-index: 5000;
+    left: 50%;
+    bottom: 30px;
+    transform: translateX(-50%);
+    font-family: 'Noto Sans TC', sans-serif;
+}
+
+.toast.show {
+    visibility: visible;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+@keyframes fadein {
+    from {
+        bottom: 0;
+        opacity: 0;
+    }
+
+    to {
+        bottom: 30px;
+        opacity: 1;
+    }
+}
+
+@keyframes fadeout {
+    from {
+        bottom: 30px;
+        opacity: 1;
+    }
+
+    to {
+        bottom: 0;
+        opacity: 0;
+    }
+}
+
+/* Mobile Responsiveness */
+#sidebarToggle {
+    display: none;
+}
+
+@media (max-width: 768px) {
+
+    /* Layout */
+    .sidebar {
+        transform: translateX(-100%);
+        width: 250px;
+        z-index: 2000;
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 15px;
+    }
+
+    /* Header */
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .header>div {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    #searchInput {
+        width: 100% !important;
+    }
+
+    /* Stats Grid */
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Tables */
+    .card {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 800px;
+        /* Force horizontal scroll for complex tables */
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+        max-height: 85vh;
+    }
+
+    /* Dashboard Title Area */
+    .page-title-area {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    #sidebarToggle {
+        display: block;
+        margin-right: 15px;
+        font-size: 1.5rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #333;
+    }
+}
