@@ -347,6 +347,11 @@ async function viewOrderDetails(orderId) {
     document.getElementById('preName').innerText = order.name;
     document.getElementById('prePhone').innerText = order.phone;
     document.getElementById('preNote').innerText = order.note || '(無)';
+
+    // Calculate Total Quantity
+    const totalQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('confirmTotalCount').innerText = totalQty;
+
     document.getElementById('confirmTotal').innerText = Store.formatCurrency(order.totalAmount);
 
     const itemsHtml = order.items.map(item => `
