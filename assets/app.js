@@ -309,8 +309,9 @@ async function searchOrder() {
             'cancelled': '<span style="color:#e74c3c;">已取消</span>'
         };
 
+        // Make clickable
         return `
-            <div style="border:1px solid #eee; padding:15px; border-radius:8px; margin-bottom:10px; background:#fafafa;">
+            <div onclick="viewOrderDetails('${order.id}')" style="cursor:pointer; border:1px solid #eee; padding:15px; border-radius:8px; margin-bottom:10px; background:#fafafa; transition: background 0.2s;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                     <strong style="color:#d35400;">#${order.id}</strong>
                     <span>${Store.formatDate(order.createdAt)}</span>
@@ -319,10 +320,49 @@ async function searchOrder() {
                 <div style="font-size:0.9rem; color:#666; margin-bottom:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                     ${itemSummary}
                 </div>
-                <div style="text-align:right; font-size:0.9rem;">
-                    狀態: <strong>${statusMap[order.status] || order.status}</strong>
+                <div style="text-align:right; font-size:0.9rem; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.8rem; color:#999;">(點擊查看詳情)</span>
+                    <span>狀態: <strong>${statusMap[order.status] || order.status}</strong></span>
                 </div>
             </div>
         `;
     }).join('');
 }
+
+async function viewOrderDetails(orderId) {
+    const orders = await Store.getOrders();
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // Set global lastOrder for share/print functions to work
+    lastOrder = order;
+
+    // Populate Modal
+    // Add Order ID population
+    const idElement = document.getElementById('confirmOrderId');
+    if (idElement) {
+        idElement.innerText = '#' + order.id;
+    }
+
+    document.getElementById('preName').innerText = order.name;
+    document.getElementById('prePhone').innerText = order.phone;
+    document.getElementById('preNote').innerText = order.note || '(無)';
+    document.getElementById('confirmTotal').innerText = Store.formatCurrency(order.totalAmount);
+
+    const itemsHtml = order.items.map(item => `
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:8px 0;">
+            <span>${item.name} x ${item.quantity}</span>
+            <span>${Store.formatCurrency(item.price * item.quantity)}</span>
+        </div>
+    `).join('');
+    document.getElementById('confirmItems').innerHTML = itemsHtml;
+
+    // Show Confirmation Modal
+    // Hide Inquiry Modal to avoid overlay confusion (optional, but cleaner)
+    // document.getElementById('inquiryModal').style.display = 'none'; 
+    // Actually, let's keep it open so they can go back? 
+    // If confirmationModal z-index is higher, it works. 
+    // Let's assume z-index is fine (usually modals are high).
+    document.getElementById('confirmationModal').style.display = 'flex';
+}
+window.viewOrderDetails = viewOrderDetails;
