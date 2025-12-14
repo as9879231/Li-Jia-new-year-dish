@@ -203,14 +203,15 @@
                 margin-left: 0;
                 width: 100%;
                 padding: 15px;
-                padding-top: 80px;
-                /* Space for fixed header */
+                padding-top: 15px;
+                /* No fixed header space needed */
             }
 
             .header {
-                position: fixed;
-                top: 0;
-                left: 0;
+                position: relative;
+                /* Let it flow naturally */
+                top: auto;
+                left: auto;
                 width: 100%;
                 background: white;
                 z-index: 900;
