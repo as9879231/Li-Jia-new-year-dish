@@ -125,14 +125,14 @@ function renderOrders(orders) {
 
     tableBody.innerHTML = orders.map(order => `
         <tr onclick="openOrderModal('${order.id}')" style="cursor:pointer;">
-            <td>#${order.id}</td>
-            <td>${order.name}</td>
-            <td>${order.phone}</td>
-            <td>${order.paymentStatus === 'paid' ? '<span style="color:green">已付款</span>' : '<span style="color:red">未付款</span>'}</td>
-            <td>${Store.formatCurrency(order.totalAmount)}</td>
-            <td>${statusMap[order.status] || order.status}</td>
-            <td>${Store.formatDate(order.createdAt)}</td>
-            <td>
+            <td data-label="訂單編號">#${order.id}</td>
+            <td data-label="姓名">${order.name}</td>
+            <td data-label="電話">${order.phone}</td>
+            <td data-label="付款狀態">${order.paymentStatus === 'paid' ? '<span style="color:green">已付款</span>' : '<span style="color:red">未付款</span>'}</td>
+            <td data-label="總金額">${Store.formatCurrency(order.totalAmount)}</td>
+            <td data-label="訂單狀態">${statusMap[order.status] || order.status}</td>
+            <td data-label="訂購時間">${Store.formatDate(order.createdAt)}</td>
+            <td data-label="操作">
                 <button class="btn btn-outline" style="padding:4px 8px; font-size:0.8rem;" onclick="event.stopPropagation(); openOrderModal('${order.id}')">查看</button>
             </td>
         </tr>
