@@ -151,6 +151,11 @@
             color: var(--status-completed-text);
         }
 
+        /* Mobile Label (Hidden on Desktop) */
+        .mobile-label {
+            display: none;
+        }
+
         /* Modal tweaks */
         .detail-row {
             display: flex;
@@ -240,26 +245,40 @@
                 background: white;
             }
 
+            /* Revert to Block Layout (Safest) */
             td {
+                display: block !important;
+                position: relative !important;
+                padding-left: 10px !important;
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
+                margin-bottom: 0px;
+                /* Tight rows */
+                text-align: left !important;
                 border: none;
-                border-bottom: 1px solid #eee;
-                position: relative;
-                padding-left: 50%;
-                text-align: right;
+                /* Clean look */
+                font-size: 0.95rem;
+                /* Slightly smaller text */
+                color: #333 !important;
+                min-height: auto;
+                line-height: 1.4;
+            }
+
+            /* Enable Mobile Labels */
+            td .mobile-label {
+                display: inline-block !important;
+                width: 80px;
+                /* Compact label width */
+                font-weight: bold;
+                color: #888;
+                font-size: 0.9rem;
             }
 
             td:before {
-                position: absolute;
-                top: 15px;
-                /* Match padding */
-                left: 15px;
-                width: 45%;
-                padding-right: 10px;
-                white-space: nowrap;
-                text-align: left;
-                font-weight: bold;
-                content: attr(data-label);
+                display: none !important;
             }
+        }
+
         }
     </style>
 </head>
