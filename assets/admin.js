@@ -91,8 +91,31 @@ function switchTab(tabId) {
     }
 }
 
+// Toggle Sidebar
 function toggleSidebar() {
-    document.querySelector('.sidebar').classList.toggle('active');
+    console.log("Toggle sidebar clicked");
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('active');
+
+    // If opening, add listener to close when clicking outside
+    if (sidebar.classList.contains('active')) {
+        setTimeout(() => {
+            document.addEventListener('click', closeSidebarOutside);
+        }, 100);
+    } else {
+        document.removeEventListener('click', closeSidebarOutside);
+    }
+}
+
+function closeSidebarOutside(e) {
+    const sidebar = document.querySelector('.sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+
+    // If click is NOT on sidebar and NOT on toggle button
+    if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+        sidebar.classList.remove('active');
+        document.removeEventListener('click', closeSidebarOutside);
+    }
 }
 
 
