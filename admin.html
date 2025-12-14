@@ -160,6 +160,16 @@
         .detail-row {
             display: flex;
             margin-bottom: 15px;
+            border-bottom: 1px dashed #eee;
+            /* Light separator */
+            padding-bottom: 10px;
+        }
+
+        .modal-actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
 
         .detail-label {
@@ -277,6 +287,31 @@
 
             td:before {
                 display: none !important;
+            }
+
+            /* Mobile Modal overrides */
+            .detail-row {
+                flex-direction: column;
+                gap: 5px;
+                margin-bottom: 10px;
+            }
+
+            .detail-label {
+                width: 100%;
+                color: #888;
+                font-size: 0.85rem;
+            }
+
+            .modal-actions {
+                flex-direction: column-reverse;
+                /* Put primary action (Confirm/Delete) at bottom usually, or stack */
+                width: 100%;
+            }
+
+            .modal-actions button {
+                width: 100%;
+                padding: 12px;
+                font-size: 1rem;
             }
         }
     </style>
@@ -495,7 +530,7 @@
                 總計: <span id="modalTotal"></span>
             </div>
 
-            <div style="margin-top:30px; display:flex; gap:10px; align-items:center;">
+            <div class="modal-actions">
                 <button class="btn btn-outline"
                     style="border-color:#e74c3c; color:#e74c3c; padding:8px 15px; font-size:0.9rem;"
                     onclick="deleteCurrentOrder()">🗑️ 刪除</button>
