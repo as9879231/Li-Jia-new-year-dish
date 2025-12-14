@@ -686,3 +686,8 @@ async function restoreBackup(input) {
     };
     reader.readAsText(file);
 }
+// Mobile Toggle Logic
+function toggleSidebar() {
+    document.querySelector('.sidebar').classList.toggle('active');
+}
+window.toggleSidebar = toggleSidebar;

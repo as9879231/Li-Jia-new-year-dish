@@ -327,7 +327,8 @@
             <div class="form-group">
                 <label class="form-label">請輸入預訂時的手機號碼</label>
                 <div style="display:flex; gap:10px;">
-                    <input type="tel" class="form-input" id="searchPhone" placeholder="09xx-xxx-xxx">
+                    <input type="tel" class="form-input" id="searchPhone" placeholder="輸入電話號碼 (無需符號)"
+                        onkeydown="if(event.key === 'Enter') searchOrder()">
                     <button class="btn btn-primary" onclick="searchOrder()">查詢</button>
                 </div>
             </div>
