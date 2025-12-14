@@ -3,8 +3,25 @@
  */
 
 // Initialize
+// Initialize
 document.addEventListener('DOMContentLoaded', async () => {
     await Store.init();
+
+    // ID of overlay
+    const overlay = document.getElementById('loginOverlay');
+
+    // Monitor Auth State (Auto Login)
+    if (Store.monitorAuth) {
+        Store.monitorAuth((user) => {
+            if (user) {
+                console.log("Admin logged in:", user.email);
+                overlay.style.display = 'none';
+            } else {
+                console.log("No admin user.");
+                overlay.style.display = 'flex';
+            }
+        });
+    }
 
     // Initial Load
     switchTab('orders');
@@ -12,6 +29,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Mobile toggle
     document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
 });
+
+// Login Function (Global)
+window.checkLogin = async function () {
+    const email = document.getElementById('adminEmail').value;
+    const password = document.getElementById('adminPassword').value;
+    const errorDisplay = document.getElementById('loginError');
+
+    if (!email || !password) {
+        alert("請輸入帳號與密碼");
+        return;
+    }
+
+    try {
+        errorDisplay.style.display = 'none';
+        await Store.login(email, password);
+        // Success handled by monitorAuth callback above
+    } catch (e) {
+        errorDisplay.innerText = "❌ 登入失敗: " + (e.code === 'auth/invalid-credential' ? '帳號或密碼錯誤' : e.message);
+        errorDisplay.style.display = 'block';
+    }
+};
 
 
 // === Navigation ===

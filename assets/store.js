@@ -25,8 +25,15 @@ const Store = {
             }
 
             const { initializeApp, getFirestore, collection, getDocs } = window.firebase;
+
             const app = initializeApp(firebaseConfig);
             this.db = getFirestore(app);
+
+            // Conditional Auth Init (Only if SDK loaded)
+            if (window.firebase.getAuth) {
+                const { getAuth } = window.firebase;
+                this.auth = getAuth(app);
+            }
 
             // Check connection by fetching products (or seeding if empty)
             await this.loadProducts();
@@ -35,6 +42,35 @@ const Store = {
             console.error('Firebase Initialization Error:', e);
             alert('連線到資料庫失敗，請檢查網路連線。');
         }
+    },
+
+    // Auth Methods
+    async login(email, password) {
+        if (!this.auth) throw new Error("Auth module not loaded");
+        try {
+            const { signInWithEmailAndPassword } = window.firebase;
+            const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
+            return userCredential.user;
+        } catch (error) {
+            console.error("Login failed:", error);
+            throw error;
+        }
+    },
+
+    async logout() {
+        try {
+            const { signOut } = window.firebase;
+            await signOut(this.auth);
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    },
+
+    monitorAuth(callback) {
+        const { onAuthStateChanged } = window.firebase;
+        onAuthStateChanged(this.auth, (user) => {
+            callback(user);
+        });
     },
 
     async loadProducts() {
