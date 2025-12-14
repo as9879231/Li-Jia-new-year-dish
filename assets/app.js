@@ -165,18 +165,28 @@ function closeCheckout() {
 function verifyOrder(e) {
     e.preventDefault();
 
-    const name = document.getElementById('cxName').value;
-    const phone = document.getElementById('cxPhone').value;
+    const name = document.getElementById('cxName').value.trim();
+    const phoneInput = document.getElementById('cxPhone').value.trim();
     const note = document.getElementById('cxNote').value;
 
-    if (!name || !phone) {
-        showToast('請填寫完整資訊');
-        return;
+    if (!name) return showToast('請填寫訂購人姓名');
+
+    // Smart Phone Validation
+    // Remove symbols: spaces, dashes, parentheses
+    const cleanPhone = phoneInput.replace(/[\s\-\(\)]/g, '');
+
+    // Check 1: Must be numbers
+    if (!/^\d+$/.test(cleanPhone)) {
+        return alert('電話號碼格式錯誤 (請勿包含特殊文字)');
+    }
+    // Check 2: Length 7-10 (Flexible for landline/mobile)
+    if (cleanPhone.length < 7 || cleanPhone.length > 10) {
+        return alert('電話號碼長度似乎不正確 (請確認是否為 7~10 碼)');
     }
 
     // Populate Pre-Modal
     document.getElementById('preName').innerText = name;
-    document.getElementById('prePhone').innerText = phone;
+    document.getElementById('prePhone').innerText = phoneInput; // Show original input
     document.getElementById('preNote').innerText = note || '(無)';
 
     document.getElementById('preItems').innerHTML = cart.map(item => `
@@ -190,18 +200,26 @@ function verifyOrder(e) {
     document.getElementById('preTotal').innerText = Store.formatCurrency(total);
 
     // Switch Modals
-    document.getElementById('checkoutModal').classList.remove('active'); // Changed from style.display = 'none' to match openCheckout's classList.add('active')
+    document.getElementById('checkoutModal').classList.remove('active');
     document.getElementById('preOrderModal').style.display = 'flex';
 }
 
 function backToEdit() {
     document.getElementById('preOrderModal').style.display = 'none';
-    document.getElementById('checkoutModal').classList.add('active'); // Changed from style.display = 'flex' to match openCheckout's classList.add('active')
+    document.getElementById('checkoutModal').classList.add('active');
 }
 
 let lastOrder = null;
 
 async function finalSubmitOrder() {
+    const btn = document.getElementById('btnSubmitOrder');
+
+    // 1. Debounce (Prevent double click)
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = '處理中...';
+    }
+
     // Data is already in form inputs, just read again
     const orderData = {
         name: document.getElementById('cxName').value,
@@ -219,6 +237,11 @@ async function finalSubmitOrder() {
         document.getElementById('confirmOrderId').innerText = '#' + newOrder.id;
         document.getElementById('confirmName').innerText = newOrder.name;
         document.getElementById('confirmTotal').innerText = Store.formatCurrency(newOrder.totalAmount);
+
+        // Calculate total count
+        const totalQty = newOrder.items.reduce((sum, item) => sum + item.quantity, 0);
+        const countEl = document.getElementById('confirmTotalCount');
+        if (countEl) countEl.innerText = totalQty;
 
         document.getElementById('confirmItems').innerHTML = newOrder.items.map(item => `
             <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.95rem;">
@@ -244,8 +267,13 @@ async function finalSubmitOrder() {
 
     } catch (e) {
         console.error(e);
-        // Show detailed error for debugging
         alert("訂單送出失敗：\n" + (e.message || e));
+    } finally {
+        // Restore button state
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = '確認送出';
+        }
     }
 }
 
