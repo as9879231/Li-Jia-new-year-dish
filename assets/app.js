@@ -310,14 +310,22 @@ function closeInquiry() {
 }
 
 async function searchOrder() {
-    const phone = document.getElementById('searchPhone').value.trim();
-    if (!phone) {
-        alert('請輸入手機號碼');
+    const phoneInput = document.getElementById('searchPhone').value.trim();
+    if (!phoneInput) {
+        alert('請輸入電話號碼');
         return;
     }
 
+    const cleanInput = phoneInput.replace(/\D/g, ''); // Remove all non-digits
+
     const orders = await Store.getOrders();
-    const myOrders = orders.filter(o => o.phone === phone);
+    const myOrders = orders.filter(o => {
+        // Safe check for phone existence
+        if (!o.phone) return false;
+        // Compare cleaner numbers
+        const cleanOrderPhone = o.phone.toString().replace(/\D/g, '');
+        return cleanOrderPhone === cleanInput;
+    });
 
     const container = document.getElementById('searchResults');
 
