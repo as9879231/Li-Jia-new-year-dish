@@ -89,6 +89,13 @@ function switchTab(tabId) {
         document.getElementById('systemSection').classList.remove('hidden');
         document.getElementById('pageTitle').innerText = '系統設定';
     }
+
+    // Auto-close sidebar on mobile after selection
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar.classList.contains('active')) {
+        sidebar.classList.remove('active');
+        document.removeEventListener('click', closeSidebarOutside); // Cleanup listener
+    }
 }
 
 // Toggle Sidebar
