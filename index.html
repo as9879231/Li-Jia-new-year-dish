@@ -308,13 +308,32 @@
             <form onsubmit="verifyOrder(event)">
                 <div class="form-group">
                     <label class="form-label">訂購人姓名</label>
-                    <input type="text" class="form-input" id="cxName" required placeholder="請輸入姓名">
+                    <input type="text" class="form-input" id="cxName" required placeholder="請輸入姓名" autocomplete="off">
                 </div>
                 <div class="form-group">
                     <label class="form-label">聯絡電話</label>
-                    <input type="tel" class="form-input" id="cxPhone" required placeholder="09xx-xxx-xxx">
+                    <input type="tel" class="form-input" id="cxPhone" required placeholder="請輸入電話號碼" autocomplete="off">
                 </div>
-                <!-- Note Removed -->
+
+                <!-- Honeypot (Checkout) -->
+                <input type="text" name="website_url_check" id="hp_check"
+                    style="opacity:0; position:absolute; top:0; left:0; height:0; width:0; z-index:-1;" tabindex="-1"
+                    autocomplete="off">
+
+                <!-- Math CAPTCHA (Checkout) -->
+                <div class="form-group"
+                    style="background:#fff8e1; padding:10px; border-radius:8px; border:1px dashed #f39c12;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold; color:#d35400;">🔒 真人驗證</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <span style="font-size:0.9rem;">請回答：</span>
+                        <span id="checkoutCaptchaQuestion"
+                            style="font-weight:bold; color:#d35400; font-size:1.2rem; background:white; padding:5px 10px; border-radius:4px; border:1px solid #ddd;">?
+                            + ?</span>
+                        <span style="font-weight:bold;">=</span>
+                        <input type="number" id="checkoutCaptchaAnswer" class="form-input" placeholder="?"
+                            style="width:80px; text-align:center;" required>
+                    </div>
+                </div>
                 <div style="display: flex; gap: 10px;">
                     <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeCheckout()">取消</button>
                     <button type="submit" class="btn btn-primary" style="flex: 1;">送出訂單</button>
@@ -329,11 +348,32 @@
             <h2 style="margin-bottom: 20px; color: var(--primary-red);">訂單查詢</h2>
             <div class="form-group">
                 <label class="form-label">請輸入預訂時的手機號碼</label>
-                <div style="display:flex; gap:10px;">
+                <div style="margin-bottom:10px;">
                     <input type="tel" class="form-input" id="searchPhone" placeholder="輸入電話號碼 (無需符號)"
-                        onkeydown="if(event.key === 'Enter') searchOrder()">
-                    <button class="btn btn-primary" onclick="searchOrder()">查詢</button>
+                        onkeydown="if(event.key === 'Enter') searchOrder()" autocomplete="off">
                 </div>
+
+                <!-- Honeypot (Inquiry) -->
+                <input type="text" name="website_url_inq" id="hp_inq"
+                    style="opacity:0; position:absolute; top:0; left:0; height:0; width:0; z-index:-1;" tabindex="-1"
+                    autocomplete="off">
+
+                <!-- Math CAPTCHA (Inquiry) -->
+                <div class="form-group"
+                    style="background:#fff8e1; padding:10px; border-radius:8px; border:1px dashed #f39c12; margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:bold; color:#d35400;">🔒 真人驗證</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <span style="font-size:0.9rem;">請回答：</span>
+                        <span id="inquiryCaptchaQuestion"
+                            style="font-weight:bold; color:#d35400; font-size:1.2rem; background:white; padding:5px 10px; border-radius:4px; border:1px solid #ddd;">?
+                            + ?</span>
+                        <span style="font-weight:bold;">=</span>
+                        <input type="number" id="inquiryCaptchaAnswer" class="form-input" placeholder="?"
+                            style="width:80px; text-align:center;">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" style="width:100%;" onclick="searchOrder()">查詢訂單</button>
             </div>
 
             <div id="searchResults" style="margin-top:20px; max-height:300px; overflow-y:auto;">

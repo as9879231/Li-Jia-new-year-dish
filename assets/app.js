@@ -178,7 +178,38 @@ function updateCartUI() {
     cartTotalEl.innerText = Store.formatCurrency(total);
 }
 
-// Toggles & Modals
+// Security State
+let captchaAnswers = {
+    checkout: 0,
+    inquiry: 0
+};
+
+function initCaptcha(type) {
+    const num1 = Math.floor(Math.random() * 9) + 1; // 1-9
+    const num2 = Math.floor(Math.random() * 9) + 1; // 1-9
+    const sum = num1 + num2;
+
+    captchaAnswers[type] = sum;
+
+    const el = document.getElementById(`${type}CaptchaQuestion`);
+    if (el) el.innerText = `${num1} + ${num2}`;
+
+    const input = document.getElementById(`${type}CaptchaAnswer`);
+    if (input) input.value = ''; // Clear old answer
+}
+
+// Open Functions with Captcha Init
+function openInquiry() {
+    initCaptcha('inquiry');
+    document.getElementById('inquiryModal').style.display = 'flex';
+    document.getElementById('searchResults').innerHTML = ''; // Clear prev results
+    document.getElementById('searchPhone').value = '';
+}
+
+function closeInquiry() {
+    document.getElementById('inquiryModal').style.display = 'none';
+}
+
 function toggleCart(forceOpen = null) {
     const panel = document.getElementById('cartPanel');
     if (forceOpen === true) panel.classList.add('open');
@@ -189,6 +220,8 @@ function toggleCart(forceOpen = null) {
 function openCheckout() {
     if (!isSystemOpen) return alert('很抱歉，本年度訂購已截止。');
     if (cart.length === 0) return alert('請先加入商品到購物車');
+
+    initCaptcha('checkout'); // Init Captcha
     document.getElementById('checkoutModal').classList.add('active');
     toggleCart(false);
 }
@@ -197,33 +230,46 @@ function closeCheckout() {
     document.getElementById('checkoutModal').classList.remove('active');
 }
 
-// 1. Verify Verification
+// Modified Verify Order (Security Checks)
 function verifyOrder(e) {
     e.preventDefault();
 
+    // 1. Honeypot Check (Bot Trap)
+    const hp = document.getElementById('hp_check').value;
+    if (hp) {
+        console.warn("Bot detected via honeypot");
+        return; // Silent fail
+    }
+
     const name = document.getElementById('cxName').value.trim();
     const phoneInput = document.getElementById('cxPhone').value.trim();
-    // const note = document.getElementById('cxNote').value; // Removed
+    const captchaInput = parseInt(document.getElementById('checkoutCaptchaAnswer').value);
 
     if (!name) return showToast('請填寫訂購人姓名');
 
-    // Smart Phone Validation
-    // Remove symbols: spaces, dashes, parentheses
+    // 2. Phone Validation (Flexible)
     const cleanPhone = phoneInput.replace(/[\s\-\(\)]/g, '');
-
-    // Check 1: Must be numbers
-    if (!/^\d+$/.test(cleanPhone)) {
-        return alert('電話號碼格式錯誤 (請勿包含特殊文字)');
-    }
-    // Check 2: Length 7-10 (Flexible for landline/mobile)
-    if (cleanPhone.length < 7 || cleanPhone.length > 10) {
-        return alert('電話號碼長度似乎不正確 (請確認是否為 7~10 碼)');
+    // Allow 7-10 digits (Landline or Mobile)
+    if (!/^\d+$/.test(cleanPhone) || cleanPhone.length < 7 || cleanPhone.length > 10) {
+        return alert('電話號碼格式錯誤 (請輸入 7-10 碼數字)');
     }
 
-    // Populate Pre-Modal
+    // 3. Math CAPTCHA Check
+    if (captchaInput !== captchaAnswers.checkout) {
+        return alert('驗證碼錯誤，請重新計算 (證明您不是機器人)');
+    }
+
+    // 4. Rate Limiting (60s cooldown)
+    const lastTime = localStorage.getItem('lastOrderTime');
+    const now = Date.now();
+    if (lastTime && (now - lastTime < 60000)) {
+        const remaining = Math.ceil((60000 - (now - lastTime)) / 1000);
+        return alert(`系統繁忙中，請等待 ${remaining} 秒後再試。`);
+    }
+
+    // Pass checks
     document.getElementById('preName').innerText = name;
-    document.getElementById('prePhone').innerText = phoneInput; // Show original input
-    // document.getElementById('preNote').innerText = note || '(無)';
+    document.getElementById('prePhone').innerText = phoneInput;
 
     document.getElementById('preItems').innerHTML = cart.map(item => `
         <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.9rem;">
@@ -235,9 +281,77 @@ function verifyOrder(e) {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     document.getElementById('preTotal').innerText = Store.formatCurrency(total);
 
-    // Switch Modals
     document.getElementById('checkoutModal').classList.remove('active');
     document.getElementById('preOrderModal').style.display = 'flex';
+}
+
+// Updated Search Order (Security Checks)
+async function searchOrder() {
+    // 1. Honeypot Check
+    const hp = document.getElementById('hp_inq').value;
+    if (hp) return;
+
+    // 2. Math Captcha Check
+    const captchaInput = parseInt(document.getElementById('inquiryCaptchaAnswer').value);
+    if (captchaInput !== captchaAnswers.inquiry) {
+        return alert('驗證碼錯誤，請重新計算');
+    }
+
+    const phoneInput = document.getElementById('searchPhone').value.trim();
+    if (!phoneInput) {
+        alert('請輸入電話號碼');
+        return;
+    }
+
+    // 3. Phone Validation (Flexible)
+    const cleanInput = phoneInput.replace(/[\s\-\(\)]/g, '');
+    if (!/^\d+$/.test(cleanInput) || cleanInput.length < 7 || cleanInput.length > 10) {
+        return alert('請輸入完整的手機號碼 (7-10 碼)');
+    }
+
+
+
+    const orders = await Store.getOrders();
+    const myOrders = orders.filter(o => {
+        if (!o.phone) return false;
+        const cleanOrderPhone = o.phone.toString().replace(/\D/g, '');
+        return cleanOrderPhone === cleanInput;
+    });
+
+    const container = document.getElementById('searchResults');
+
+    if (myOrders.length === 0) {
+        container.innerHTML = '<p style="color:#666; text-align:center;">查無此手機號碼的訂單。</p>';
+        return;
+    }
+
+    container.innerHTML = myOrders.map(order => {
+        const itemSummary = order.items.map(i => i.name).join(', ');
+        const statusMap = {
+            'new': '<span style="color:#e67e22;">處理中</span>',
+            'processing': '<span style="color:#e67e22;">處理中</span>',
+            'confirmed': '<span style="color:#3498db;">已確認</span>',
+            'completed': '<span style="color:#2ecc71;">已完成</span>',
+            'cancelled': '<span style="color:#e74c3c;">已取消</span>'
+        };
+
+        return `
+            <div onclick="viewOrderDetails('${order.id}')" style="cursor:pointer; border:1px solid #eee; padding:15px; border-radius:8px; margin-bottom:10px; background:#fafafa; transition: background 0.2s;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <strong style="color:#d35400;">#${order.id}</strong>
+                    <span>${Store.formatDate(order.createdAt)}</span>
+                </div>
+                <div style="margin-bottom:5px; font-weight:700;">${Store.formatCurrency(order.totalAmount)}</div>
+                <div style="font-size:0.9rem; color:#666; margin-bottom:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    ${itemSummary}
+                </div>
+                <div style="text-align:right; font-size:0.9rem; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.8rem; color:#999;">(點擊查看詳情)</span>
+                    <span>狀態: <strong>${statusMap[order.status] || order.status}</strong></span>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function backToEdit() {
@@ -267,6 +381,10 @@ async function finalSubmitOrder() {
 
     try {
         const newOrder = await Store.addOrder(orderData);
+
+        // Anti-Spam: Set Cooldown
+        localStorage.setItem('lastOrderTime', Date.now());
+
         lastOrder = newOrder; // Store for valid LINE sharing
 
         // Show Success Modal
@@ -333,113 +451,4 @@ function printOrder() {
     }
 }
 
-// === INQUIRY LOGIC ===
 
-function openInquiry() {
-    document.getElementById('inquiryModal').style.display = 'flex';
-}
-
-function closeInquiry() {
-    document.getElementById('inquiryModal').style.display = 'none';
-    document.getElementById('searchResults').innerHTML = '';
-    document.getElementById('searchPhone').value = '';
-}
-
-async function searchOrder() {
-    const phoneInput = document.getElementById('searchPhone').value.trim();
-    if (!phoneInput) {
-        alert('請輸入電話號碼');
-        return;
-    }
-
-    const cleanInput = phoneInput.replace(/\D/g, ''); // Remove all non-digits
-
-    const orders = await Store.getOrders();
-    const myOrders = orders.filter(o => {
-        // Safe check for phone existence
-        if (!o.phone) return false;
-        // Compare cleaner numbers
-        const cleanOrderPhone = o.phone.toString().replace(/\D/g, '');
-        return cleanOrderPhone === cleanInput;
-    });
-
-    const container = document.getElementById('searchResults');
-
-    if (myOrders.length === 0) {
-        container.innerHTML = '<p style="color:#666; text-align:center;">查無此手機號碼的訂單。</p>';
-        return;
-    }
-
-    container.innerHTML = myOrders.map(order => {
-        const itemSummary = order.items.map(i => i.name).join(', ');
-        // Status map
-        const statusMap = {
-            'new': '<span style="color:#e67e22;">處理中</span>',
-            'processing': '<span style="color:#e67e22;">處理中</span>',
-            'confirmed': '<span style="color:#3498db;">已確認</span>',
-            'completed': '<span style="color:#2ecc71;">已完成</span>',
-            'cancelled': '<span style="color:#e74c3c;">已取消</span>'
-        };
-
-        // Make clickable
-        return `
-            <div onclick="viewOrderDetails('${order.id}')" style="cursor:pointer; border:1px solid #eee; padding:15px; border-radius:8px; margin-bottom:10px; background:#fafafa; transition: background 0.2s;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <strong style="color:#d35400;">#${order.id}</strong>
-                    <span>${Store.formatDate(order.createdAt)}</span>
-                </div>
-                <div style="margin-bottom:5px; font-weight:700;">${Store.formatCurrency(order.totalAmount)}</div>
-                <div style="font-size:0.9rem; color:#666; margin-bottom:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                    ${itemSummary}
-                </div>
-                <div style="text-align:right; font-size:0.9rem; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size:0.8rem; color:#999;">(點擊查看詳情)</span>
-                    <span>狀態: <strong>${statusMap[order.status] || order.status}</strong></span>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-async function viewOrderDetails(orderId) {
-    const orders = await Store.getOrders();
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-
-    // Set global lastOrder for share/print functions to work
-    lastOrder = order;
-
-    // Populate Modal
-    // Add Order ID population
-    const idElement = document.getElementById('confirmOrderId');
-    if (idElement) {
-        idElement.innerText = '#' + order.id;
-    }
-
-    document.getElementById('preName').innerText = order.name;
-    document.getElementById('prePhone').innerText = order.phone;
-    document.getElementById('preNote').innerText = order.note || '(無)';
-
-    // Calculate Total Quantity
-    const totalQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
-    document.getElementById('confirmTotalCount').innerText = totalQty;
-
-    document.getElementById('confirmTotal').innerText = Store.formatCurrency(order.totalAmount);
-
-    const itemsHtml = order.items.map(item => `
-        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding:8px 0;">
-            <span>${item.name} x ${item.quantity}</span>
-            <span>${Store.formatCurrency(item.price * item.quantity)}</span>
-        </div>
-    `).join('');
-    document.getElementById('confirmItems').innerHTML = itemsHtml;
-
-    // Show Confirmation Modal
-    // Hide Inquiry Modal to avoid overlay confusion (optional, but cleaner)
-    // document.getElementById('inquiryModal').style.display = 'none'; 
-    // Actually, let's keep it open so they can go back? 
-    // If confirmationModal z-index is higher, it works. 
-    // Let's assume z-index is fine (usually modals are high).
-    document.getElementById('confirmationModal').style.display = 'flex';
-}
-window.viewOrderDetails = viewOrderDetails;

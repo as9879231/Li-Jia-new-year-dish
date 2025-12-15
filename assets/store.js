@@ -1,4 +1,4 @@
-const Store = {
+var Store = {
     // Firebase Config
     db: null,
     products: [],
@@ -78,28 +78,15 @@ const Store = {
             const { collection, getDocs, addDoc } = window.firebase;
             const querySnapshot = await getDocs(collection(this.db, "products"));
 
-            if (querySnapshot.empty) {
-                console.log("No products globally found in DB. Seeding initial data...");
-                const initialProducts = [
-                    { id: 1, name: "富貴佛跳牆", price: 1280, desc: "嚴選鮑魚、干貝、蹄筋等十餘種頂級食材，慢火煨燉十二小時。" },
-                    { id: 2, name: "紅燒獅子頭", price: 680, desc: "嚴選黑毛豬後腿肉，口感紮實Q彈，搭配獨門醬汁。" },
-                    { id: 3, name: "櫻花蝦米糕", price: 580, desc: "東港櫻花蝦與長糯米完美結合，香氣四溢。" },
-                    { id: 4, name: "紹興醉雞卷", price: 480, desc: "陳年紹興酒醃製入味，皮脆肉嫩，酒香撲鼻。" },
-                    { id: 5, name: "筍乾東坡肉", price: 780, desc: "肥而不膩，入口即化，搭配在地鮮嫩筍乾。" },
-                    { id: 6, name: "鮮人蔘雞湯", price: 980, desc: "整支鮮人蔘燉煮，湯頭清甜回甘，滋補養生。" }
-                ];
-
-                for (const p of initialProducts) {
-                    await addDoc(collection(this.db, "products"), p);
-                }
-                this.products = initialProducts; // Temporary for this load
-            } else {
-                this.products = [];
+            this.products = [];
+            if (!querySnapshot.empty) {
                 querySnapshot.forEach((doc) => {
                     this.products.push({ _id: doc.id, ...doc.data() });
                 });
                 // Sort by id if available
                 this.products.sort((a, b) => a.id - b.id);
+            } else {
+                console.log("No products found in DB.");
             }
             return this.products;
         } catch (e) {
