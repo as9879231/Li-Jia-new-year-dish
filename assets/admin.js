@@ -1,8 +1,7 @@
-/**
+﻿/**
  * Admin Dashboard Logic
  */
 
-// Initialize
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
     await Store.init();
@@ -37,7 +36,7 @@ window.checkLogin = async function () {
     const errorDisplay = document.getElementById('loginError');
 
     if (!email || !password) {
-        alert("請輸入帳號與密碼");
+        alert("請輸入管理員帳號密碼");
         return;
     }
 
@@ -46,7 +45,7 @@ window.checkLogin = async function () {
         await Store.login(email, password);
         // Success handled by monitorAuth callback above
     } catch (e) {
-        errorDisplay.innerText = "❌ 登入失敗: " + (e.code === 'auth/invalid-credential' ? '帳號或密碼錯誤' : e.message);
+        errorDisplay.innerText = "登入失敗: " + (e.code === 'auth/invalid-credential' ? '帳號或密碼錯誤' : e.message);
         errorDisplay.style.display = 'block';
     }
 };
@@ -163,7 +162,7 @@ function renderOrders(orders) {
     tableBody.innerHTML = orders.map(order => `
         <tr onclick="openOrderModal('${order.id}')" style="cursor:pointer;">
             <td><span class="mobile-label">訂單編號</span>#${order.id}</td>
-            <td><span class="mobile-label">姓名</span>${order.name}</td>
+            <td><span class="mobile-label">訂購人</span>${order.name}</td>
             <td><span class="mobile-label">電話</span>${order.phone}</td>
             <td><span class="mobile-label">付款狀態</span>${order.paymentStatus === 'paid' ? '<span style="color:green">已付款</span>' : '<span style="color:red">未付款</span>'}</td>
             <td><span class="mobile-label">總金額</span>${Store.formatCurrency(order.totalAmount)}</td>
@@ -246,7 +245,6 @@ function sortOrders() {
 
 
 // === Menu Management ===
-// === Menu Management ===
 
 async function loadMenuAdmin() {
     const tableBody = document.getElementById('menuTableBody');
@@ -273,7 +271,7 @@ function renderMenuAdmin() {
                 <button class="btn btn-sm ${p.isSoldOut ? 'btn-red' : 'btn-green'}" 
                     style="padding:2px 8px; font-size:0.8rem; background:${p.isSoldOut ? '#e74c3c' : '#2ecc71'}; color:white; border:none;"
                     onclick="toggleProductStatus('${p._id}', ${p.isSoldOut})">
-                    ${p.isSoldOut ? '已售完' : '供應中'}
+                    ${p.isSoldOut ? '已售完' : '上架中'}
                 </button>
             </td>
             <td style="color:#666; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
@@ -281,9 +279,9 @@ function renderMenuAdmin() {
             </td>
             <td>
                 <button class="btn btn-outline" style="padding:2px 8px;" 
-                    onclick="moveProduct(${index}, -1)" ${index === 0 ? 'disabled' : ''}>⬆️</button>
+                    onclick="moveProduct(${index}, -1)" ${index === 0 ? 'disabled' : ''}>上移</button>
                 <button class="btn btn-outline" style="padding:2px 8px;" 
-                    onclick="moveProduct(${index}, 1)" ${index === products.length - 1 ? 'disabled' : ''}>⬇️</button>
+                    onclick="moveProduct(${index}, 1)" ${index === products.length - 1 ? 'disabled' : ''}>下移</button>
             </td>
             <td>
                 <button class="btn btn-outline" onclick="editProduct('${p._id}', ${p.id})">編輯</button>
@@ -337,7 +335,7 @@ async function saveBatch() {
     // Show loading state
     const btn = document.querySelector('#batchModal .btn-primary');
     const originalText = btn.innerText;
-    btn.innerText = '處理中...';
+    btn.innerText = '匯入中...';
     btn.disabled = true;
 
     try {
@@ -356,12 +354,12 @@ async function saveBatch() {
                 }
             }
         }
-        alert(`成功匯入 ${successCount} 筆菜色！`);
+        alert(`成功匯入 ${successCount} 筆資料。`);
         closeBatchModal();
         loadMenuAdmin();
     } catch (e) {
         console.error(e);
-        alert('匯入發生錯誤');
+        alert('匯入過程發生錯誤');
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
@@ -403,7 +401,7 @@ async function saveBatch() {
     // Show loading state
     const btn = document.querySelector('#batchModal .btn-primary');
     const originalText = btn.innerText;
-    btn.innerText = '處理中...';
+    btn.innerText = '匯入中...';
     btn.disabled = true;
 
     try {
@@ -422,12 +420,12 @@ async function saveBatch() {
                 }
             }
         }
-        alert(`成功匯入 ${successCount} 筆菜色！`);
+        alert(`成功匯入 ${successCount} 筆資料。`);
         closeBatchModal();
         loadMenuAdmin();
     } catch (e) {
         console.error(e);
-        alert('匯入發生錯誤');
+        alert('匯入過程發生錯誤');
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
@@ -483,7 +481,7 @@ async function saveProduct(e) {
 }
 
 async function deleteProduct(docId, name) {
-    if (confirm(`確定要刪除「${name}」嗎？`)) {
+    if (confirm(`確定要刪除 ${name} 嗎？`)) {
         await Store.deleteProduct(docId);
         loadMenuAdmin();
     }
@@ -519,6 +517,7 @@ function openOrderModal(orderId) {
 
 function closeModal() {
     document.getElementById('orderModal').style.display = 'none';
+    curModalOrderId = null;
 }
 
 async function updateStatus(newStatus) {
@@ -578,7 +577,7 @@ function loadStats() {
 
     const tbody = document.getElementById('kitchenTableBody');
     if (Object.keys(itemMap).length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2">目前無需備料</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="2">目前沒有統計資料</td></tr>';
         return;
     }
 
@@ -612,18 +611,18 @@ async function loadSystemSettings() {
 
         btn.disabled = false;
         if (isOpen) {
-            btn.innerText = '🟢 目前：開放訂購中 (點擊關閉)';
+            btn.innerText = '✅ 目前：開放訂購中 (點擊關閉)';
             btn.className = 'btn';
             btn.style.background = '#2ecc71'; // Green
             btn.style.color = 'white';
-            txt.innerText = '目前狀態：系統正常接單中';
+            txt.innerText = '目前狀態：店家正常接單中';
             txt.style.color = '#27ae60';
         } else {
-            btn.innerText = '🔴 目前：已停止接單 (點擊開啟)';
+            btn.innerText = '⛔ 目前：已停止訂購 (點擊開啟)';
             btn.className = 'btn';
             btn.style.background = '#e74c3c'; // Red
             btn.style.color = 'white';
-            txt.innerText = '目前狀態：已截止，前台無法下單';
+            txt.innerText = '目前狀態：已暫停，顧客無法下單';
             txt.style.color = '#c0392b';
         }
         // Store for toggle
@@ -639,23 +638,23 @@ async function toggleOrderingStatus() {
     const currentStatus = btn.dataset.status === 'true';
     const newStatus = !currentStatus;
 
-    if (!confirm(newStatus ? '確定要「重新開放」訂購嗎？' : '確定要「停止接單」嗎？')) {
+    if (!confirm(newStatus ? '確定要「開啟接單」系統嗎？' : '確定要「暫停接單」嗎？')) {
         return;
     }
 
     try {
         console.log('Step 1: Calling updateSystemSettings with', newStatus);
-        // alert('Step 1: 正在呼叫資料庫...'); // Debug
+        // alert('Step 1: 正在更新資料庫...'); // Debug
         await Store.updateSystemSettings({ isOrderingOpen: newStatus });
 
         console.log('Step 2: Update success, reloading...');
-        // alert('Step 2: 資料庫更新成功！'); // Debug
+        // alert('Step 2: 資料庫更新完成'); // Debug
         await loadSystemSettings();
 
         console.log('Step 3: Reload done');
     } catch (e) {
         console.error("System Settings Error:", e);
-        alert('更新失敗，請檢查網路連線或重新整理嘗試。\n錯誤訊息: ' + (e.message || e));
+        alert('更新失敗，請檢查網路連線或稍後再試。\n錯誤訊息: ' + (e.message || e));
     }
 }
 
@@ -681,7 +680,7 @@ async function exportToExcel() {
 
     // 2. Build Rows
     orders.forEach(o => {
-        // Create an item map for quick lookup: { "佛跳牆": 2, "醉雞": 1 }
+        // Create an item map for quick lookup: { "佛跳牆": 2, "年糕": 1 }
         const itemMap = {};
         if (o.items && Array.isArray(o.items)) {
             o.items.forEach(i => {
@@ -760,7 +759,7 @@ async function restoreBackup(input) {
     const file = input.files[0];
     if (!file) return;
 
-    if (!confirm('警告：還原將會新增備份中的所有訂單與菜色到資料庫中 (可能造成重複)。確定要繼續嗎？')) {
+    if (!confirm('警告：這將會清除現有的所有菜色與訂單，並還原備份檔！\n確定要繼續嗎？')) {
         input.value = ''; // Reset
         return;
     }
@@ -795,7 +794,7 @@ async function restoreBackup(input) {
                 console.log(`Restored ${oCount} orders`);
             }
 
-            alert('資料還原完成！');
+            alert('資料還原成功！');
             location.reload();
 
         } catch (err) {
@@ -810,3 +809,75 @@ function toggleSidebar() {
     document.querySelector('.sidebar').classList.toggle('active');
 }
 window.toggleSidebar = toggleSidebar;
+
+// Edit Order Logic
+async function editCurrentOrder() {
+    if (!currentOrderData) return;
+
+    const container = document.getElementById('modalItems');
+    container.innerHTML = currentOrderData.items.map((item, index) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <div style="flex:1;">
+                <div style="font-weight:bold;">${item.name}</div>
+                <div style="font-size:0.9rem; color:#666;">$${item.price}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <button type="button" onclick="adjustEditQty(${index}, -1)" style="padding:5px 10px;">-</button>
+                <input type="number" id="edit-qty-${index}" value="${item.quantity}" style="width:50px; text-align:center;" min="0">
+                <button type="button" onclick="adjustEditQty(${index}, 1)" style="padding:5px 10px;">+</button>
+                <button type="button" onclick="removeEditItem(${index})" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; margin-left:5px;">刪除</button>
+            </div>
+        </div>
+    `).join('');
+
+    const actions = document.querySelector('.modal-actions-container');
+    actions.setAttribute('data-original', actions.innerHTML);
+    actions.innerHTML = `
+        <div style="width:100%; display:flex; justify-content:flex-end; gap:10px;">
+            <button class="btn btn-outline" onclick="cancelEditOrder()">取消</button>
+            <button class="btn btn-primary" onclick="saveEditedOrder()">💾 儲存變更</button>
+        </div>
+    `;
+}
+
+function adjustEditQty(index, delta) {
+    const input = document.getElementById(`edit-qty-${index}`);
+    let val = parseInt(input.value) || 0;
+    val += delta;
+    if (val < 0) val = 0;
+    input.value = val;
+}
+
+function removeEditItem(index) {
+    if (confirm('確定要刪除此品項嗎？')) {
+        document.getElementById(`edit-qty-${index}`).value = 0;
+        document.getElementById(`edit-qty-${index}`).closest('div').parentElement.style.opacity = '0.3';
+    }
+}
+
+async function saveEditedOrder() {
+    if (!currentOrderData) return;
+    const newItems = [];
+    let newTotal = 0;
+    currentOrderData.items.forEach((item, index) => {
+        const input = document.getElementById(`edit-qty-${index}`);
+        const qty = parseInt(input.value) || 0;
+        if (qty > 0) {
+            newItems.push({ ...item, quantity: qty });
+            newTotal += item.price * qty;
+        }
+    });
+
+    try {
+        await Store.updateOrder(currentOrderData.id, { items: newItems, totalAmount: newTotal });
+        alert('訂單更新成功！');
+        closeModal();
+        refreshData();
+    } catch (e) {
+        alert('更新失敗：' + e.message);
+    }
+}
+
+function cancelEditOrder() {
+    closeModal();
+}

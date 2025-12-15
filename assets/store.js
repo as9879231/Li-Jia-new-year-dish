@@ -249,6 +249,18 @@ var Store = {
         }
     },
 
+    async updateOrder(docId, data) {
+        try {
+            const { doc, updateDoc } = window.firebase;
+            const ref = doc(this.db, "orders", docId);
+            await updateDoc(ref, data);
+            return true;
+        } catch (e) {
+            console.error("Update Order Error:", e);
+            throw e;
+        }
+    },
+
     async updateSystemSettings(data) {
         try {
             const { doc, setDoc } = window.firebase;

@@ -529,46 +529,60 @@
     </main>
 
     <!-- Detail Modal -->
-    <div class="modal" id="orderModal">
+    <div class="modal" id="orderModal" onclick="if(event.target === this) closeModal()">
         <div class="modal-content">
+            <!-- Header -->
             <div
-                style="display:flex; justify-content:space-between; margin-bottom:20px; border-bottom:1px solid #eee; padding-bottom:15px;">
-                <h2 id="modalId"></h2>
-                <span onclick="closeModal()" style="cursor:pointer; font-size:1.5rem;">×</span>
+                style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:15px; position:sticky; top:0; background:white; z-index:10;">
+                <h2 id="modalId" style="margin:0;"></h2>
+                <span onclick="closeModal()"
+                    style="cursor:pointer; font-size:1.5rem; padding: 0 10px; line-height: 1;">×</span>
             </div>
 
-            <div class="detail-row">
-                <div class="detail-label">訂購人</div>
-                <div id="modalName"></div>
-            </div>
-            <div class="detail-row">
-                <div class="detail-label">電話</div>
-                <div id="modalPhone"></div>
-            </div>
-            <div class="detail-row">
-                <div class="detail-label">備註</div>
-                <div id="modalNote" style="color:#666; font-style:italic;"></div>
-            </div>
+            <!-- Info Table -->
+            <table class="modal-detail-table">
+                <tr>
+                    <td class="label-col">訂購人</td>
+                    <td class="value-col" id="modalName"></td>
+                </tr>
+                <tr>
+                    <td class="label-col">電話</td>
+                    <td class="value-col" id="modalPhone"></td>
+                </tr>
+                <tr>
+                    <td class="label-col">備註</td>
+                    <td class="value-col modal-note" id="modalNote"></td>
+                </tr>
+            </table>
 
-            <div class="order-items" id="modalItems"></div>
+            <!-- Items -->
+            <h4 style="margin-bottom:10px;">訂購明細</h4>
+            <div class="modal-items-container" id="modalItems"></div>
 
-            <div style="text-align:right; font-size:1.2rem; font-weight:700; color:#c62828;">
+            <!-- Total -->
+            <div class="modal-total-section">
                 總計: <span id="modalTotal"></span>
             </div>
 
-            <div class="modal-actions">
-                <button class="btn btn-outline"
-                    style="border-color:#e74c3c; color:#e74c3c; padding:8px 15px; font-size:0.9rem;"
-                    onclick="deleteCurrentOrder()">🗑️ 刪除</button>
-                <button class="btn btn-outline" style="border:1px solid #ccc; color:#666; padding:8px 15px;"
-                    onclick="closeModal()">關閉</button>
-                <div style="flex:1;"></div>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn" style="background:#f39c12; color:white; border:none; padding:8px 12px;"
+            <!-- Actions -->
+            <div class="modal-actions-container">
+                <!-- Management Group -->
+                <div class="action-group-manage">
+                    <button class="btn btn-outline" style="border-color:#ccc; color:#666;"
+                        onclick="closeModal()">關閉</button>
+                    <button class="btn btn-outline" style="border-color:#3498db; color:#3498db;"
+                        onclick="editCurrentOrder()">✏️ 修改</button>
+                    <button class="btn btn-outline" style="border-color:#e74c3c; color:#e74c3c;"
+                        onclick="deleteCurrentOrder()">🗑️ 刪除</button>
+                </div>
+
+                <!-- Status Workflow Group -->
+                <div class="action-group-status">
+                    <button class="btn" style="background:#f39c12; color:white; border:none; padding:8px 15px;"
                         onclick="updateStatus('processing')">⏳ 處理中</button>
-                    <button class="btn" style="background:#3498db; color:white; border:none; padding:8px 12px;"
+                    <button class="btn" style="background:#3498db; color:white; border:none; padding:8px 15px;"
                         onclick="updateStatus('confirmed')">🆗 已確認</button>
-                    <button class="btn" style="background:#27ae60; color:white; border:none; padding:8px 12px;"
+                    <button class="btn" style="background:#27ae60; color:white; border:none; padding:8px 15px;"
                         onclick="updateStatus('completed')">✅ 已完成</button>
                 </div>
             </div>
@@ -623,6 +637,11 @@
     </div>
 
 
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="assets/store.js"></script>
+    <script src="assets/admin.js"></script>
 </body>
 
 </html>
