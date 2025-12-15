@@ -379,13 +379,23 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
     border-bottom: 1px solid #eee;
-    padding-bottom: 15px;
+    padding: 15px 20px;
+    /* Increased padding */
     position: sticky;
     top: 0;
     background-color: #fff;
     z-index: 100;
+}
+
+/* Specific override for Order Modal to allow full-width header */
+#orderModal .modal-content {
+    padding: 0 !important;
+}
+
+.modal-body {
+    padding: 40px;
+    /* Default Desktop Padding */
 }
 
 /* Info Grid */
