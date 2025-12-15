@@ -374,7 +374,20 @@ body {
 
 /* === Admin Modal Refinement === */
 
-/* Info Table */
+/* Modal Header */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 100;
+}
+
 /* Info Grid */
 .modal-info-grid {
     display: grid;
