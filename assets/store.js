@@ -239,5 +239,39 @@ const Store = {
     formatDate(isoString) {
         const date = new Date(isoString);
         return date.toLocaleString('zh-TW', { hour12: false });
+    },
+
+    // System Settings
+    async getSystemSettings() {
+        try {
+            const { doc, getDoc, setDoc } = window.firebase;
+            const ref = doc(this.db, "settings", "system");
+            const snap = await getDoc(ref);
+
+            if (snap.exists()) {
+                return snap.data();
+            } else {
+                // Initialize default if missing
+                const defaultSettings = { isOrderingOpen: true };
+                await setDoc(ref, defaultSettings);
+                return defaultSettings;
+            }
+        } catch (e) {
+            console.error("Get Settings Error:", e);
+            return { isOrderingOpen: true }; // Fallback
+        }
+    },
+
+    async updateSystemSettings(data) {
+        try {
+            const { doc, setDoc } = window.firebase;
+            const ref = doc(this.db, "settings", "system");
+            // Use setDoc with merge:true so it creates the doc if it doesn't exist
+            await setDoc(ref, data, { merge: true });
+            return true;
+        } catch (e) {
+            console.error("Update Settings Error:", e);
+            throw e;
+        }
     }
 };

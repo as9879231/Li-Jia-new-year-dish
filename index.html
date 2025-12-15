@@ -9,11 +9,12 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
         // Makes Firebase available globally for store.js (which we will convert to module or just attach to window)
         // Since existing app is not module-based, exposing to window is easiest migration path without rewriting everything
-        window.firebase = { initializeApp, getFirestore, collection, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp };
+        window.firebase = { initializeApp, getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, getAuth };
     </script>
 
     <script src="assets/store.js"></script>
@@ -267,6 +268,11 @@
     <section class="hero">
         <div class="container">
             <h1 class="hero-title">團圓時刻，家傳好味</h1>
+            <p
+                style="color: white; font-size: 1.5rem; margin-bottom: 20px; text-shadow: 1px 1px 4px rgba(0,0,0,0.5); font-weight:bold; background:rgba(192, 57, 43, 0.8); display:inline-block; padding:5px 15px; border-radius:50px;">
+                ⚠️ 訂購截止：國曆 1 月 19 日
+            </p>
+            <br>
             <a href="#menu" class="btn btn-primary">立即預訂</a>
         </div>
     </section>
@@ -308,10 +314,7 @@
                     <label class="form-label">聯絡電話</label>
                     <input type="tel" class="form-input" id="cxPhone" required placeholder="09xx-xxx-xxx">
                 </div>
-                <div class="form-group">
-                    <label class="form-label">備註事項</label>
-                    <textarea class="form-textarea" id="cxNote" placeholder="例如：取餐時間、口味調整等"></textarea>
-                </div>
+                <!-- Note Removed -->
                 <div style="display: flex; gap: 10px;">
                     <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeCheckout()">取消</button>
                     <button type="submit" class="btn btn-primary" style="flex: 1;">送出訂單</button>
@@ -385,10 +388,7 @@
                     <strong style="width:80px;">電話:</strong>
                     <span id="prePhone"></span>
                 </div>
-                <div class="detail-row" style="display:flex; margin-bottom:5px;">
-                    <strong style="width:80px;">備註:</strong>
-                    <span id="preNote"></span>
-                </div>
+                <!-- Note Removed -->
             </div>
 
             <div style="margin-bottom: 20px;">
@@ -441,6 +441,15 @@
                 總金額: <span id="confirmTotal"></span>
             </div>
 
+            <div
+                style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px dashed #ccc; margin-bottom:20px; text-align:left;">
+                <h4 style="margin-bottom:10px; color:#2c3e50;">📍 取餐資訊</h4>
+                <p style="margin-bottom:5px;"><strong>地點：</strong>雲林縣古坑鄉新生路7號</p>
+                <p style="margin-bottom:5px;"><strong>時間：</strong><span style="color:#e74c3c; font-weight:bold;">除夕
+                        11:00 - 14:00</span></p>
+                <p style="margin-bottom:0px;"><strong>聯絡電話：</strong>0937263952 / (05)5821600</p>
+            </div>
+
             <div style="display:flex; gap:10px; margin-bottom:10px;">
                 <button onclick="shareToLine()" class="btn"
                     style="flex:1; padding:12px; font-size:1rem; background:#06c755; color:white; border:none;">儲存訂單到
@@ -453,6 +462,24 @@
                 style="width:100%; padding:15px; font-size:1.1rem;">關閉視窗</button>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer style="background:#2c3e50; color:white; padding:40px 20px; text-align:center; margin-top:50px;">
+        <div class="container">
+            <h3 style="margin-bottom:20px;">李家年菜</h3>
+            <div style="display:flex; flex-direction:column; gap:10px; font-size:1.1rem;">
+                <p>📍 <strong>取餐地點：</strong> <a href="https://www.google.com/maps/search/?api=1&query=雲林縣古坑鄉新生路7號"
+                        target="_blank" style="color:#f1c40f; text-decoration:none;">雲林縣古坑鄉新生路7號 (點擊導航)</a></p>
+                <p>📞 <strong>聯絡電話：</strong>
+                    <a href="tel:0937263952" style="color:white; text-decoration:none;">0937263952</a> /
+                    <a href="tel:055821600" style="color:white; text-decoration:none;">(05)5821600</a>
+                </p>
+                <p>⏰ <strong>取餐時間：</strong> <span style="color:#e74c3c; font-weight:bold;">除夕 11:00 - 14:00</span></p>
+                <p>📅 <strong>訂購截止：</strong> <span style="font-weight:bold; color:#f39c12;">國曆 1 月 19 日</span></p>
+            </div>
+            <p style="margin-top:30px; font-size:0.9rem; color:#95a5a6;">&copy; 2025 李家年菜. All rights reserved.</p>
+        </div>
+    </footer>
 
     <div id="toast" class="toast">訂單已成功送出！</div>
 

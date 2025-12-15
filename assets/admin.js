@@ -60,6 +60,12 @@ function switchTab(tabId) {
     TABS.forEach(t => document.getElementById(`nav-${t}`).classList.remove('active'));
     document.getElementById(`nav-${tabId}`).classList.add('active');
 
+    // Toggle Search Visibility (Only for Orders)
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.style.display = (tabId === 'orders') ? 'block' : 'none';
+    }
+
     // Update View
     if (tabId === 'orders') {
         document.getElementById('ordersSection').style.display = 'block';
@@ -88,6 +94,7 @@ function switchTab(tabId) {
         document.getElementById('menuSection').classList.add('hidden');
         document.getElementById('systemSection').classList.remove('hidden');
         document.getElementById('pageTitle').innerText = '系統設定';
+        loadSystemSettings();
     }
 
     // Auto-close sidebar on mobile after selection
@@ -262,6 +269,13 @@ function renderMenuAdmin() {
             <td>${index + 1}</td>
             <td style="font-weight:bold;">${p.name}</td>
             <td>${p.price}</td>
+            <td>
+                <button class="btn btn-sm ${p.isSoldOut ? 'btn-red' : 'btn-green'}" 
+                    style="padding:2px 8px; font-size:0.8rem; background:${p.isSoldOut ? '#e74c3c' : '#2ecc71'}; color:white; border:none;"
+                    onclick="toggleProductStatus('${p._id}', ${p.isSoldOut})">
+                    ${p.isSoldOut ? '已售完' : '供應中'}
+                </button>
+            </td>
             <td style="color:#666; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                 ${p.desc}
             </td>
@@ -351,6 +365,19 @@ async function saveBatch() {
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
+    }
+}
+
+// Toggle Sold Out Status
+async function toggleProductStatus(docId, currentStatus) {
+    try {
+        await Store.updateProduct(docId, { isSoldOut: !currentStatus });
+        // Refresh handled by real-time listener or manual reload
+        // Since we don't have real-time listener for products yet, manually reload
+        loadMenuAdmin();
+    } catch (e) {
+        console.error("Toggle Status Error:", e);
+        alert("狀態更新失敗");
     }
 }
 
@@ -570,6 +597,67 @@ function printStats() {
 }
 
 // === System Functions ===
+
+async function loadSystemSettings() {
+    const btn = document.getElementById('btnToggleOrdering');
+    const txt = document.getElementById('orderingStatusText');
+
+    btn.innerText = '讀取中...';
+    btn.className = 'btn btn-outline';
+    btn.disabled = true;
+
+    try {
+        const settings = await Store.getSystemSettings();
+        const isOpen = settings.isOrderingOpen;
+
+        btn.disabled = false;
+        if (isOpen) {
+            btn.innerText = '🟢 目前：開放訂購中 (點擊關閉)';
+            btn.className = 'btn';
+            btn.style.background = '#2ecc71'; // Green
+            btn.style.color = 'white';
+            txt.innerText = '目前狀態：系統正常接單中';
+            txt.style.color = '#27ae60';
+        } else {
+            btn.innerText = '🔴 目前：已停止接單 (點擊開啟)';
+            btn.className = 'btn';
+            btn.style.background = '#e74c3c'; // Red
+            btn.style.color = 'white';
+            txt.innerText = '目前狀態：已截止，前台無法下單';
+            txt.style.color = '#c0392b';
+        }
+        // Store for toggle
+        btn.dataset.status = isOpen;
+    } catch (e) {
+        console.error(e);
+        btn.innerText = '讀取失敗';
+    }
+}
+
+async function toggleOrderingStatus() {
+    const btn = document.getElementById('btnToggleOrdering');
+    const currentStatus = btn.dataset.status === 'true';
+    const newStatus = !currentStatus;
+
+    if (!confirm(newStatus ? '確定要「重新開放」訂購嗎？' : '確定要「停止接單」嗎？')) {
+        return;
+    }
+
+    try {
+        console.log('Step 1: Calling updateSystemSettings with', newStatus);
+        // alert('Step 1: 正在呼叫資料庫...'); // Debug
+        await Store.updateSystemSettings({ isOrderingOpen: newStatus });
+
+        console.log('Step 2: Update success, reloading...');
+        // alert('Step 2: 資料庫更新成功！'); // Debug
+        await loadSystemSettings();
+
+        console.log('Step 3: Reload done');
+    } catch (e) {
+        console.error("System Settings Error:", e);
+        alert('更新失敗，請檢查網路連線或重新整理嘗試。\n錯誤訊息: ' + (e.message || e));
+    }
+}
 
 async function exportToExcel() {
     const orders = await Store.getOrders();

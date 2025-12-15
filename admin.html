@@ -9,9 +9,9 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        window.firebase = { initializeApp, getFirestore, collection, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+        window.firebase = { initializeApp, getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
     </script>
     <script src="assets/store.js"></script>
     <style>
@@ -157,6 +157,13 @@
         }
 
         /* Modal tweaks */
+        #ordersSection,
+        #statsSection,
+        #menuSection,
+        #systemSection {
+            animation: fadeIn 0.3s ease-out;
+        }
+
         .detail-row {
             display: flex;
             margin-bottom: 15px;
@@ -454,6 +461,7 @@
                             <th>編號</th>
                             <th>名稱</th>
                             <th>價格</th>
+                            <th>狀態</th>
                             <th>描述</th>
                             <th>順序</th>
                             <th>操作</th>
@@ -467,6 +475,22 @@
         </div>
         <!-- System Section -->
         <section id="systemSection" class="hidden">
+            <!-- Ordering Status (New) -->
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="margin-bottom:20px;">⚙️ 接單狀態設定</h3>
+                <div
+                    style="background:#f9f9f9; padding:20px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;">
+                    <div>
+                        <h4 style="margin-bottom:5px;">全站接單控制</h4>
+                        <p style="color:#666; margin:0;" id="orderingStatusText">目前狀態：讀取中...</p>
+                    </div>
+                    <button id="btnToggleOrdering" class="btn"
+                        style="padding:10px 20px; font-size:1.1rem; font-weight:bold;" onclick="toggleOrderingStatus()">
+                        讀取中...
+                    </button>
+                </div>
+            </div>
+
             <h2 style="margin-bottom:20px; color:#333;">資料安全管理</h2>
             <div class="status-grid">
                 <div class="status-card" style="border-left: 4px solid #3498db;">
@@ -597,7 +621,7 @@
         </div>
     </div>
 
-    <script src="assets/admin.js"></script>
+
 </body>
 
 </html>

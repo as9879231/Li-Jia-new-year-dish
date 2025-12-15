@@ -7,12 +7,28 @@ let cart = [];
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
     await Store.init();
+    await checkOrderingStatus(); // Check system status first
     await renderMenu();
     updateCartUI();
 });
 
 // Global temp variable for current selection
 let curSelectId = null;
+let isSystemOpen = true; // Global flag
+
+async function checkOrderingStatus() {
+    const settings = await Store.getSystemSettings();
+    isSystemOpen = settings.isOrderingOpen;
+
+    if (!isSystemOpen) {
+        // Show Banner
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed; top:0; left:0; width:100%; background:#c0392b; color:white; text-align:center; padding:15px; font-weight:bold; z-index:9999; box-shadow:0 2px 10px rgba(0,0,0,0.3);';
+        banner.innerHTML = '⚠️ 本年度年菜訂購已截止，感謝您的支持！';
+        document.body.prepend(banner);
+        document.body.style.paddingTop = '50px'; // Push down content
+    }
+}
 
 async function renderMenu() {
     const products = await Store.getProducts();
@@ -23,22 +39,37 @@ async function renderMenu() {
         return;
     }
 
-    menuGrid.innerHTML = products.map((dish, index) => `
-        <div class="dish-card">
+    menuGrid.innerHTML = products.map((dish, index) => {
+        const isSoldOut = dish.isSoldOut === true;
+        // Global Lock overrides individual status
+        const isDisabled = !isSystemOpen || isSoldOut;
+        let btnText = '加入購物車';
+        if (!isSystemOpen) btnText = '已截止';
+        else if (isSoldOut) btnText = '已售完';
+
+        return `
+        <div class="dish-card ${isDisabled ? 'sold-out' : ''}">
             <div class="dish-info">
-                <h3 class="dish-title">${index + 1}. ${dish.name}</h3>
+                <h3 class="dish-title">
+                    ${index + 1}. ${dish.name}
+                    ${isDisabled ? `<span style="font-size:0.8rem; color:#e74c3c; margin-left:5px;">(${btnText})</span>` : ''}
+                </h3>
                 <p class="dish-desc">${dish.desc}</p>
                 <div class="dish-meta">
                     <span class="dish-price">${Store.formatCurrency(dish.price)}</span>
-                    <button class="btn btn-outline" onclick="openQtyModal('${dish.id}', '${dish.name}', ${dish.price})">加入購物車</button>
+                    <button class="btn btn-outline" 
+                        ${isDisabled ? 'disabled style="border-color:#ccc; color:#999; cursor:not-allowed;"' : `onclick="openQtyModal('${dish.id}', '${dish.name}', ${dish.price})"`}>
+                        ${btnText}
+                    </button>
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 // Qty Modal Logic
 function openQtyModal(id, name, price) {
+    if (!isSystemOpen) return alert('很抱歉，訂購已截止。');
     curSelectId = id;
     document.getElementById('qtyModalTitle').innerText = name;
     document.getElementById('qtyModalPrice').innerText = Store.formatCurrency(price);
@@ -72,6 +103,10 @@ async function addToCart(id, quantity = 1) {
     // Convert id to string or number safely for comparison
     const dish = products.find(p => p.id == id || p.id === id);
     if (!dish) return;
+    if (dish.isSoldOut) {
+        showToast('此商品已售完');
+        return;
+    }
 
     const existing = cart.find(item => item.id == id);
 
@@ -152,6 +187,7 @@ function toggleCart(forceOpen = null) {
 }
 
 function openCheckout() {
+    if (!isSystemOpen) return alert('很抱歉，本年度訂購已截止。');
     if (cart.length === 0) return alert('請先加入商品到購物車');
     document.getElementById('checkoutModal').classList.add('active');
     toggleCart(false);
@@ -167,7 +203,7 @@ function verifyOrder(e) {
 
     const name = document.getElementById('cxName').value.trim();
     const phoneInput = document.getElementById('cxPhone').value.trim();
-    const note = document.getElementById('cxNote').value;
+    // const note = document.getElementById('cxNote').value; // Removed
 
     if (!name) return showToast('請填寫訂購人姓名');
 
@@ -187,7 +223,7 @@ function verifyOrder(e) {
     // Populate Pre-Modal
     document.getElementById('preName').innerText = name;
     document.getElementById('prePhone').innerText = phoneInput; // Show original input
-    document.getElementById('preNote').innerText = note || '(無)';
+    // document.getElementById('preNote').innerText = note || '(無)';
 
     document.getElementById('preItems').innerHTML = cart.map(item => `
         <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.9rem;">
@@ -224,7 +260,7 @@ async function finalSubmitOrder() {
     const orderData = {
         name: document.getElementById('cxName').value,
         phone: document.getElementById('cxPhone').value,
-        note: document.getElementById('cxNote').value,
+        note: '', // Removed user input
         items: cart,
         totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     };
@@ -260,7 +296,7 @@ async function finalSubmitOrder() {
         updateCartUI();
         document.getElementById('cxName').value = '';
         document.getElementById('cxPhone').value = '';
-        document.getElementById('cxNote').value = '';
+        // Note input removed
 
         // Show Toast
         showToast("訂單已成功送出！");
