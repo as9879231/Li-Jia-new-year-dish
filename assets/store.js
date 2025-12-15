@@ -222,7 +222,7 @@ var Store = {
             const webhookURL = `https://corsproxy.io/?${targetUrl}`;
 
             const itemsList = order.items.map(item =>
-                `• ${item.name} x${item.qty} ($${item.total})`
+                `• ${item.name} x${item.quantity} ($${item.price * item.quantity})`
             ).join('\n');
 
             const embed = {

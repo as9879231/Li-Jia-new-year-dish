@@ -334,6 +334,7 @@ async function searchOrder() {
         myOrders = await Store.findOrdersByPhone(cleanInput);
     } catch (e) {
         console.error(e);
+        alert("查詢詳細錯誤 (Debug): " + (e.message || e));
         container.innerHTML = '<p style="text-align:center; color:red;">查詢發生錯誤，請稍後再試。</p>';
         return;
     }
