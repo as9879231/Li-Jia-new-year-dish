@@ -298,6 +298,8 @@ function verifyOrder(e) {
     document.getElementById('preOrderModal').style.display = 'flex';
 }
 
+let currentSearchResults = [];
+
 // Updated Search Order (Security Checks)
 async function searchOrder() {
     // 1. Honeypot Check
@@ -332,6 +334,7 @@ async function searchOrder() {
     try {
         // Use New Secure Method (Query instead of Get All)
         myOrders = await Store.findOrdersByPhone(cleanInput);
+        currentSearchResults = myOrders; // Cache for details view
     } catch (e) {
         console.error(e);
         container.innerHTML = '<p style="text-align:center; color:red;">查詢發生錯誤，請稍後再試。</p>';
@@ -475,8 +478,8 @@ function printOrder() {
 
 // View Order Details (Reuse Confirmation Modal)
 async function viewOrderDetails(orderId) {
-    const orders = await Store.getOrders();
-    const order = orders.find(o => o.id == orderId || o.id === orderId);
+    // Rule Fix: Don't re-fetch all orders (blocked by security rules). Use cache.
+    const order = currentSearchResults.find(o => o.id == orderId || o.id === orderId);
 
     if (!order) return alert('找不到此訂單');
 
