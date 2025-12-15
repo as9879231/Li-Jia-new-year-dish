@@ -13,7 +13,6 @@
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         window.firebase = { initializeApp, getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
     </script>
-    <script src="assets/store.js"></script>
     <style>
         body {
             font-family: 'Noto Sans TC', sans-serif;
@@ -550,6 +549,9 @@
                     <div class="modal-info-label">總件數</div>
                     <div class="modal-info-value" id="modalCount"></div>
 
+                    <div class="modal-info-label">付款狀態</div>
+                    <div class="modal-info-value" id="modalPayStatus" style="font-weight:bold;"></div>
+
                     <div class="modal-info-label">備註</div>
                     <div class="modal-info-value modal-note" id="modalNote"></div>
                 </div>
@@ -565,24 +567,26 @@
 
                 <!-- Actions -->
                 <div class="modal-actions-container">
-                    <!-- Management Group -->
-                    <div class="action-group-manage">
-                        <button class="btn btn-outline" style="border-color:#ccc; color:#666;"
-                            onclick="closeModal()">關閉</button>
-                        <button class="btn btn-outline" style="border-color:#3498db; color:#3498db;"
-                            onclick="editCurrentOrder()">✏️ 修改</button>
-                        <button class="btn btn-outline" style="border-color:#e74c3c; color:#e74c3c;"
-                            onclick="deleteCurrentOrder()">🗑️ 刪除</button>
-                    </div>
-
                     <!-- Status Workflow Group -->
-                    <div class="action-group-status">
+                    <div class="action-group-status" style="margin-bottom: 15px;">
                         <button class="btn" style="background:#f39c12; color:white; border:none; padding:8px 15px;"
                             onclick="updateStatus('processing')">⏳ 處理中</button>
                         <button class="btn" style="background:#3498db; color:white; border:none; padding:8px 15px;"
                             onclick="updateStatus('confirmed')">🆗 已確認</button>
                         <button class="btn" style="background:#27ae60; color:white; border:none; padding:8px 15px;"
                             onclick="updateStatus('completed')">✅ 已完成</button>
+                    </div>
+
+                    <!-- Management Group -->
+                    <div class="action-group-manage">
+                        <button class="btn btn-outline" style="border-color:#27ae60; color:#27ae60;"
+                            onclick="togglePaymentStatus()">💰 切換付款</button>
+                        <button class="btn btn-outline" style="border-color:#3498db; color:#3498db;"
+                            onclick="editCurrentOrder()">✏️ 修改</button>
+                        <button class="btn btn-outline" style="border-color:#e74c3c; color:#e74c3c;"
+                            onclick="deleteCurrentOrder()">🗑️ 刪除</button>
+                        <button class="btn btn-outline" style="border-color:#ccc; color:#666;"
+                            onclick="closeModal()">關閉</button>
                     </div>
                 </div>
             </div>

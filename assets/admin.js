@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (user) {
                 console.log("Admin logged in:", user.email);
                 overlay.style.display = 'none';
+                // Sync Counter automatically on login
+                if (Store.syncOrderCounter) Store.syncOrderCounter();
             } else {
                 console.log("No admin user.");
                 overlay.style.display = 'flex';
@@ -27,6 +29,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Mobile toggle
     document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+
+    // Search Listener
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', searchOrders);
+    }
 });
 
 // Login Function (Global)
@@ -52,7 +60,7 @@ window.checkLogin = async function () {
 
 
 // === Navigation ===
-const TABS = ['orders', 'stats', 'menu', 'system'];
+var TABS = ['orders', 'stats', 'menu', 'system'];
 
 function switchTab(tabId) {
     // Update Nav
@@ -133,13 +141,31 @@ function closeSidebarOutside(e) {
 
 
 // === Order Management ===
-let currentOrders = [];
+var currentOrders = [];
+
+function searchOrders() {
+    const term = document.getElementById('searchInput').value.trim().toLowerCase();
+
+    if (!term) {
+        renderOrders(currentOrders);
+        return;
+    }
+
+    const filtered = currentOrders.filter(o =>
+        (o.id && o.id.toString().toLowerCase().includes(term)) ||
+        (o.name && o.name.toLowerCase().includes(term)) ||
+        (o.phone && o.phone.includes(term))
+    );
+
+    renderOrders(filtered);
+}
 
 async function loadOrders() {
     const tableBody = document.getElementById('orderTableBody');
     tableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">載入中...</td></tr>';
 
     currentOrders = await Store.getOrders();
+    sortOrders(); // Enforce sort stability
     renderOrders(currentOrders);
     updateDashboardStats(currentOrders);
 }
@@ -190,7 +216,7 @@ function updateDashboardStats(orders) {
 
 
 // Search & Sort implementation
-let currentSort = { key: 'id', dir: 'desc' }; // Default sort by ID desc
+var currentSort = { key: 'id', dir: 'desc' }; // Default sort by ID desc
 
 function toggleSort(key) {
     if (currentSort.key === key) {
@@ -488,8 +514,8 @@ async function deleteProduct(docId, name) {
 }
 
 // === Order Modal Logic ===
-let curModalOrderId = null;
-let currentOrderData = null;
+var curModalOrderId = null;
+var currentOrderData = null;
 
 function openOrderModal(orderId) {
     const order = currentOrders.find(o => o.id == orderId || o.id === orderId); // Loose check
@@ -502,6 +528,22 @@ function openOrderModal(orderId) {
     document.getElementById('modalId').innerText = '#' + order.id;
     document.getElementById('modalName').innerText = order.name;
     document.getElementById('modalPhone').innerText = order.phone;
+
+    // Calculate and set total count
+    const totalQty = order.items.reduce((sum, item) => sum + item.quantity, 0);
+    const countEl = document.getElementById('modalCount');
+    if (countEl) countEl.innerText = totalQty + " 件";
+
+    // Set Payment Status
+    const payStatusEl = document.getElementById('modalPayStatus');
+    if (payStatusEl) {
+        if (order.paymentStatus === 'paid') {
+            payStatusEl.innerHTML = '<span style="color:green">已付款</span>';
+        } else {
+            payStatusEl.innerHTML = '<span style="color:red">未付款</span>';
+        }
+    }
+
     document.getElementById('modalNote').innerText = order.note || '(無)';
 
     const itemsHtml = order.items.map(i => `
@@ -518,16 +560,17 @@ function openOrderModal(orderId) {
     const actions = document.querySelector('.modal-actions-container');
     if (actions) {
         actions.innerHTML = `
-            <div class="action-group-manage">
-                <button class="btn btn-outline" style="border-color:#ccc; color:#666;" onclick="closeModal()">關閉</button>
-                <button class="btn btn-outline" style="border-color:#3498db; color:#3498db;" onclick="editCurrentOrder()">✏️ 修改</button>
-                <button class="btn btn-outline" style="border-color:#e74c3c; color:#e74c3c;" onclick="deleteCurrentOrder()">🗑️ 刪除</button>
-            </div>
-            
-            <div class="action-group-status">
+            <div class="action-group-status" style="margin-bottom: 15px;">
                 <button class="btn" style="background:#f39c12; color:white; border:none; padding:8px 15px;" onclick="updateStatus('processing')">⏳ 處理中</button>
                 <button class="btn" style="background:#3498db; color:white; border:none; padding:8px 15px;" onclick="updateStatus('confirmed')">🆗 已確認</button>
                 <button class="btn" style="background:#27ae60; color:white; border:none; padding:8px 15px;" onclick="updateStatus('completed')">✅ 已完成</button>
+            </div>
+
+            <div class="action-group-manage">
+                <button class="btn btn-outline" style="border-color:#27ae60; color:#27ae60;" onclick="togglePaymentStatus()">💰 切換付款</button>
+                <button class="btn btn-outline" style="border-color:#3498db; color:#3498db;" onclick="editCurrentOrder()">✏️ 修改</button>
+                <button class="btn btn-outline" style="border-color:#e74c3c; color:#e74c3c;" onclick="deleteCurrentOrder()">🗑️ 刪除</button>
+                <button class="btn btn-outline" style="border-color:#ccc; color:#666;" onclick="closeModal()">關閉</button>
             </div>
         `;
     }
@@ -541,17 +584,73 @@ function closeModal() {
     currentOrderData = null;
 }
 
+async function togglePaymentStatus() {
+    if (!curModalOrderId || !currentOrderData) return;
+
+    const newStatus = currentOrderData.paymentStatus === 'paid' ? 'unpaid' : 'paid';
+    const { doc, updateDoc } = window.firebase;
+
+    try {
+        const ref = doc(Store.db, "orders", curModalOrderId);
+        await updateDoc(ref, { paymentStatus: newStatus });
+
+        // Update local data
+        currentOrderData.paymentStatus = newStatus;
+
+        // Update UI immediately
+        const payStatusEl = document.getElementById('modalPayStatus');
+        if (payStatusEl) {
+            if (newStatus === 'paid') {
+                payStatusEl.innerHTML = '<span style="color:green">已付款</span>';
+            } else {
+                payStatusEl.innerHTML = '<span style="color:red">未付款</span>';
+            }
+        }
+
+        // Update background list
+        loadOrders();
+
+        // alert(`已切換為：${newStatus === 'paid' ? '已付款' : '未付款'}`);
+    } catch (e) {
+        console.error(e);
+        alert('切換付款狀態失敗');
+    }
+}
+
 async function updateStatus(newStatus) {
     if (!curModalOrderId) return;
 
     // No confirm needed for status updates to be faster
     const { doc, updateDoc } = window.firebase;
 
+    // Check if auto-payment should trigger
+    const updateData = { status: newStatus };
+    if (newStatus === 'completed') {
+        updateData.paymentStatus = 'paid';
+    }
+
     try {
         const ref = doc(Store.db, "orders", curModalOrderId);
-        await updateDoc(ref, { status: newStatus });
-        closeModal();
+        await updateDoc(ref, updateData);
+
+        // Update local data
+        if (currentOrderData) {
+            currentOrderData.status = newStatus;
+
+            // Auto Update Payment badge locally
+            if (newStatus === 'completed') {
+                currentOrderData.paymentStatus = 'paid';
+                const payStatusEl = document.getElementById('modalPayStatus');
+                if (payStatusEl) {
+                    payStatusEl.innerHTML = '<span style="color:green">已付款</span>';
+                }
+            }
+        }
+
+        // closeModal(); // Removed per user request
         loadOrders();
+
+        // alert('狀態已更新');
     } catch (e) {
         console.error(e);
         alert('更新失敗');
@@ -567,6 +666,9 @@ async function deleteCurrentOrder() {
         try {
             const ref = doc(Store.db, "orders", curModalOrderId);
             await deleteDoc(ref);
+
+            // Sync counter to ensure gaps are filled or next ID is correct (if last one deleted)
+            if (Store.syncOrderCounter) await Store.syncOrderCounter();
 
             // Also update local list immediately or just reload
             alert('訂單已刪除');
@@ -611,9 +713,86 @@ function loadStats() {
 }
 
 function printStats() {
-    document.body.classList.add('printing-stats');
-    window.print();
-    document.body.classList.remove('printing-stats');
+    // 1. Calculate Data (Mirroring loadStats logic)
+    const itemMap = {};
+    const activeOrders = currentOrders.filter(o => o.status === 'new' || o.status === 'processing' || o.status === 'confirmed');
+
+    activeOrders.forEach(o => {
+        if (o.items) {
+            o.items.forEach(i => {
+                if (!itemMap[i.name]) itemMap[i.name] = 0;
+                itemMap[i.name] += i.quantity;
+            });
+        }
+    });
+
+    if (Object.keys(itemMap).length === 0) {
+        alert('目前沒有統計資料可列印');
+        return;
+    }
+
+    const dateStr = new Date().toLocaleString('zh-TW', { hour12: false });
+
+    // 2. Open Print Window
+    const win = window.open('', 'print_window', 'width=800,height=1000');
+    if (!win) {
+        alert('請允許開啟彈出視窗以進行列印');
+        return;
+    }
+
+    // 3. Write Clean HTML
+    win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>廚房備料單</title>
+            <style>
+                body { font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif; padding: 20px; }
+                h2 { text-align: center; margin-bottom: 5px; font-size: 22px; }
+                .meta { text-align: center; color: #666; font-size: 14px; margin-bottom: 15px; }
+                table { width: 100%; border-collapse: collapse; border: 2px solid #000; }
+                th, td { border: 1px solid #999; padding: 8px 10px; text-align: left; font-size: 16px; }
+                th { background-color: #f0f0f0; border-bottom: 2px solid #000; }
+                .qty { font-size: 20px; font-weight: bold; text-align: center; width: 15%; }
+                @media print {
+                    @page { margin: 0.8cm; }
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <h2>📋 廚房備料單</h2>
+            <div class="meta">列印時間：${dateStr}</div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>菜色名稱</th>
+                        <th class="qty">數量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Object.entries(itemMap).map(([name, qty]) => `
+                        <tr>
+                            <td>${name}</td>
+                            <td class="qty">${qty}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+
+            <script>
+                // Auto print and close
+                window.onload = function() {
+                    window.print();
+                    // Optional: window.close() after a delay or let user close
+                }
+            </script>
+        </body>
+        </html>
+    `);
+
+    win.document.close(); // Ensure load triggers
 }
 
 // === System Functions ===
@@ -869,7 +1048,14 @@ async function editCurrentOrder() {
         </div>
     `;
 
-    container.innerHTML = itemsHtml + addSectionHtml;
+    const noteHtml = `
+        <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee;">
+            <label style="font-weight:bold; display:block; margin-bottom:5px;">訂單備註</label>
+            <textarea id="edit-note" style="width:100%; height:60px; padding:8px; border:1px solid #ddd; border-radius:4px; resize:none;">${currentOrderData.note || ''}</textarea>
+        </div>
+    `;
+
+    container.innerHTML = itemsHtml + addSectionHtml + noteHtml;
 
     const actions = document.querySelector('.modal-actions-container');
     actions.setAttribute('data-original', actions.innerHTML);
@@ -943,12 +1129,21 @@ async function saveEditedOrder() {
     const newItems = currentOrderData.items.filter(i => i.quantity > 0);
     const newTotal = newItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
+    // Get Note
+    const noteInput = document.getElementById('edit-note');
+    const newNote = noteInput ? noteInput.value.trim() : (currentOrderData.note || '');
+
     try {
-        await Store.updateOrder(currentOrderData.id, { items: newItems, totalAmount: newTotal });
+        await Store.updateOrder(currentOrderData.id, { items: newItems, totalAmount: newTotal, note: newNote });
         alert('訂單更新成功！');
-        closeModal();
-        // Reload orders
-        loadOrders();
+
+        // Removed closeModal(); 
+        // Reload orders first to get fresh data
+        await loadOrders();
+
+        // Refresh modal view (Exit edit mode, show updated info)
+        openOrderModal(currentOrderData.id);
+
     } catch (e) {
         alert('更新失敗：' + e.message);
     }

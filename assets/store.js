@@ -118,51 +118,127 @@ var Store = {
         }
     },
 
+    // New Secure Query Method
+    async findOrdersByPhone(phone) {
+        try {
+            const { collection, getDocs, query, where } = window.firebase;
+            if (!query || !where) throw new Error("Firebase Query features not loaded");
+
+            const q = query(collection(this.db, "orders"), where("phone", "==", phone));
+            const querySnapshot = await getDocs(q);
+
+            const orders = [];
+            querySnapshot.forEach((doc) => {
+                orders.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Sort local
+            return orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        } catch (e) {
+            console.error("Error searching orders by phone: ", e);
+            throw e;
+        }
+    },
+
     async addOrder(orderData) {
         try {
-            const { collection, setDoc, doc } = window.firebase;
+            const { collection, setDoc, doc, runTransaction, getDocs } = window.firebase;
 
-            if (!setDoc) {
-                alert("系統核心元件 (setDoc) 未載入，請嘗試按 Ctrl+Shift+R 強制重新整理網頁。");
-                throw new Error("Firebase setDoc import missing. Clear cache.");
+            if (!runTransaction) {
+                alert("系統核心元件 (runTransaction) 未載入，請嘗試按 Ctrl+Shift+R 強制重新整理網頁。");
+                throw new Error("Firebase runTransaction import missing. Clear cache.");
             }
 
-            // Generate Sequential ID: A1, A2, ...
-            // Note: This requires reading all orders to find next number. 
-            // For a small scale app this is fine, but for high concurrency it needs transactions.
-            const orders = await this.getOrders();
-            let nextNum = 1;
+            const counterRef = doc(this.db, "settings", "orderCounter");
 
-            if (orders.length > 0) {
-                // Find max ID starting with A
-                const existingNums = orders
-                    .map(o => o.id)
-                    .filter(id => typeof id === 'string' && id.startsWith('A'))
-                    .map(id => parseInt(id.substring(1)))
-                    .filter(n => !isNaN(n));
+            let finalId = '';
 
-                if (existingNums.length > 0) {
-                    nextNum = Math.max(...existingNums) + 1;
+            await runTransaction(this.db, async (transaction) => {
+                const counterDoc = await transaction.get(counterRef);
+                let nextNum = 1;
+
+                if (!counterDoc.exists()) {
+                    // Fallback: If counter doesn't exist, try to count existing orders carefully
+                    // This is a one-time migration step.
+                    try {
+                        const allOrders = await getDocs(collection(this.db, "orders"));
+                        if (!allOrders.empty) {
+                            const existingNums = allOrders.docs
+                                .map(d => d.data().id)
+                                .filter(id => typeof id === 'string' && id.startsWith('A'))
+                                .map(id => parseInt(id.substring(1)))
+                                .filter(n => !isNaN(n));
+
+                            if (existingNums.length > 0) {
+                                nextNum = Math.max(...existingNums) + 1;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Could not read orders for init fallback (likely permission denied). Starting at 1.");
+                    }
+                } else {
+                    nextNum = (counterDoc.data().current || 0) + 1;
                 }
+
+                const customId = `A${nextNum}`;
+                finalId = customId;
+
+                const finalData = {
+                    ...orderData,
+                    id: customId,
+                    status: 'processing',
+                    paymentStatus: 'unpaid',
+                    createdAt: new Date().toISOString()
+                };
+
+                // 1. Update Counter
+                transaction.set(counterRef, { current: nextNum }, { merge: true });
+
+                // 2. Create Order
+                // Use the custom ID as the document key as well for consistency
+                transaction.set(doc(this.db, "orders", customId), finalData);
+            });
+
+            return { id: finalId, ...orderData };
+
+        } catch (e) {
+            console.error("Error adding order transaction: ", e);
+            alert("下單失敗，請稍後再試。原因: " + (e.message || "未知錯誤"));
+            throw e;
+        }
+    },
+
+    // Admin Helper: Sync Counter (Run when Admin Logs in)
+    async syncOrderCounter() {
+        try {
+            const { collection, getDocs, doc, setDoc } = window.firebase;
+
+            // Check if counter exists first
+            const counterRef = doc(this.db, "settings", "orderCounter");
+            // We just overwrite it based on max found to be safe
+
+            console.log("Syncing Order Counter...");
+            const allOrders = await getDocs(collection(this.db, "orders"));
+
+            if (allOrders.empty) return;
+
+            const existingNums = allOrders.docs
+                .map(d => d.data().id)
+                .filter(id => typeof id === 'string' && id.startsWith('A'))
+                .map(id => parseInt(id.substring(1)))
+                .filter(n => !isNaN(n));
+
+            let maxNum = 0;
+            if (existingNums.length > 0) {
+                maxNum = Math.max(...existingNums);
             }
 
-            const customId = `A${nextNum}`;
+            // Update Counter to Max found
+            await setDoc(counterRef, { current: maxNum }, { merge: true });
+            console.log("Order Counter Synced to:", maxNum);
 
-            const finalData = {
-                ...orderData,
-                id: customId, // Store readable ID in data too
-                status: 'processing',
-                paymentStatus: 'unpaid',
-                createdAt: new Date().toISOString()
-            };
-
-            // Use setDoc with custom ID instead of addDoc
-            await setDoc(doc(this.db, "orders", customId), finalData);
-
-            return finalData;
         } catch (e) {
-            console.error("Error adding order: ", e);
-            throw e;
+            console.error("Failed to sync counter (Are you Admin?):", e);
         }
     },
 

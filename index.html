@@ -9,12 +9,12 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, runTransaction, query, where, limit, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
         // Makes Firebase available globally for store.js (which we will convert to module or just attach to window)
         // Since existing app is not module-based, exposing to window is easiest migration path without rewriting everything
-        window.firebase = { initializeApp, getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, getAuth };
+        window.firebase = { initializeApp, getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, runTransaction, query, where, limit, Timestamp, getAuth };
     </script>
 
     <script src="assets/store.js"></script>
@@ -304,6 +304,22 @@
     <!-- Checkout Modal -->
     <div class="modal" id="checkoutModal">
         <div class="modal-content">
+            <!-- Stepper: Step 1 -->
+            <div class="stepper">
+                <div class="step active">
+                    <div class="step-circle">1</div>
+                    <div>填寫資料</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">2</div>
+                    <div>確認訂單</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">3</div>
+                    <div>完成訂購</div>
+                </div>
+            </div>
+
             <h2 style="margin-bottom: 20px; color: var(--primary-red);">填寫訂購資訊</h2>
             <form onsubmit="verifyOrder(event)">
                 <div class="form-group">
@@ -414,6 +430,23 @@
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2500; align-items:center; justify-content:center;">
         <div class="modal-content"
             style="background:white; width:90%; max-width:500px; padding:30px; border-radius:12px; position:relative; max-height:90vh; overflow-y:auto;">
+
+            <!-- Stepper: Step 2 -->
+            <div class="stepper">
+                <div class="step done">
+                    <div class="step-circle">✓</div>
+                    <div>填寫資料</div>
+                </div>
+                <div class="step active">
+                    <div class="step-circle">2</div>
+                    <div>確認訂單</div>
+                </div>
+                <div class="step">
+                    <div class="step-circle">3</div>
+                    <div>完成訂購</div>
+                </div>
+            </div>
+
             <h2
                 style="margin-bottom: 20px; color: var(--primary-red); border-bottom: 2px solid #eee; padding-bottom: 10px;">
                 請確認訂購資訊</h2>
@@ -442,6 +475,15 @@
                 </div>
             </div>
 
+            <div
+                style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px dashed #ccc; margin-bottom:20px; text-align:left;">
+                <h4 style="margin-bottom:10px; color:#2c3e50;">📍 取餐資訊</h4>
+                <p style="margin-bottom:5px;"><strong>地點：</strong>雲林縣古坑鄉新生路7號</p>
+                <p style="margin-bottom:5px;"><strong>時間：</strong><span style="color:#e74c3c; font-weight:bold;">除夕
+                        11:00 - 14:00</span></p>
+                <p style="margin-bottom:0px;"><strong>聯絡電話：</strong>0937263952 / (05)5821600</p>
+            </div>
+
             <div style="display: flex; gap: 10px;">
                 <button type="button" class="btn btn-outline" style="flex: 1;" onclick="backToEdit()">返回修改</button>
                 <button type="button" class="btn btn-primary" style="flex: 1;" id="btnSubmitOrder"
@@ -455,6 +497,23 @@
         style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:3000; align-items:center; justify-content:center;">
         <div class="modal-content"
             style="background:white; width:90%; max-width:500px; padding:30px; border-radius:12px; position:relative; max-height:90vh; overflow-y:auto;">
+
+            <!-- Stepper: Step 3 -->
+            <div class="stepper">
+                <div class="step done">
+                    <div class="step-circle">✓</div>
+                    <div>填寫資料</div>
+                </div>
+                <div class="step done">
+                    <div class="step-circle">✓</div>
+                    <div>確認訂單</div>
+                </div>
+                <div class="step active">
+                    <div class="step-circle">3</div>
+                    <div>完成訂購</div>
+                </div>
+            </div>
+
             <div style="text-align:center; margin-bottom:20px;">
                 <div style="font-size:3rem; margin-bottom:10px;">🎉</div>
                 <h2 style="color:#d35400; font-size:1.8rem;">訂購成功！</h2>

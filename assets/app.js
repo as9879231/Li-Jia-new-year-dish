@@ -256,6 +256,7 @@ function verifyOrder(e) {
 
     // 3. Math CAPTCHA Check
     if (captchaInput !== captchaAnswers.checkout) {
+        initCaptcha('checkout'); // Refresh on error
         return alert('驗證碼錯誤，請重新計算 (證明您不是機器人)');
     }
 
@@ -297,6 +298,7 @@ async function searchOrder() {
     // 2. Math Captcha Check
     const captchaInput = parseInt(document.getElementById('inquiryCaptchaAnswer').value);
     if (captchaInput !== captchaAnswers.inquiry) {
+        initCaptcha('inquiry'); // Refresh on error
         return alert('驗證碼錯誤，請重新計算');
     }
 
@@ -314,17 +316,21 @@ async function searchOrder() {
 
 
 
-    const orders = await Store.getOrders();
-    const myOrders = orders.filter(o => {
-        if (!o.phone) return false;
-        const cleanOrderPhone = o.phone.toString().replace(/\D/g, '');
-        return cleanOrderPhone === cleanInput;
-    });
-
     const container = document.getElementById('searchResults');
+    container.innerHTML = '<p style="text-align:center;">查詢中...</p>';
+
+    let myOrders = [];
+    try {
+        // Use New Secure Method (Query instead of Get All)
+        myOrders = await Store.findOrdersByPhone(cleanInput);
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p style="text-align:center; color:red;">查詢發生錯誤，請稍後再試。</p>';
+        return;
+    }
 
     if (myOrders.length === 0) {
-        container.innerHTML = '<p style="color:#666; text-align:center;">查無此手機號碼的訂單。</p>';
+        container.innerHTML = '<p style="color:#e74c3c; text-align:center;">查無此手機號碼的訂單。</p>';
         return;
     }
 
@@ -355,11 +361,15 @@ async function searchOrder() {
             </div>
         `;
     }).join('');
+
+    // Always refresh CAPTCHA after a search attempt (correct or not) to prevent reuse
+    initCaptcha('inquiry');
 }
 
 function backToEdit() {
     document.getElementById('preOrderModal').style.display = 'none';
     document.getElementById('checkoutModal').classList.add('active');
+    initCaptcha('checkout'); // New question when coming back
 }
 
 let lastOrder = null;
@@ -452,6 +462,42 @@ function printOrder() {
     if (confirm("📱 手機版建議：請直接「截圖」保存。\n🖨️ 電腦版建議：請按「確定」列印。\n\n是否繼續開啟列印視窗？")) {
         window.print();
     }
+}
+
+// View Order Details (Reuse Confirmation Modal)
+async function viewOrderDetails(orderId) {
+    const orders = await Store.getOrders();
+    const order = orders.find(o => o.id == orderId || o.id === orderId);
+
+    if (!order) return alert('找不到此訂單');
+
+    lastOrder = order; // Set for sharing
+
+    // Reuse Confirmation Modal
+    document.getElementById('confirmationModal').style.display = 'flex';
+
+    // Update Title for View Mode
+    const titleEl = document.querySelector('#confirmationModal h2');
+    if (titleEl) titleEl.innerText = '訂單詳情';
+
+    const descEl = document.querySelector('#confirmationModal p');
+    if (descEl) descEl.innerText = '此為您的訂單紀錄';
+
+    document.getElementById('confirmOrderId').innerText = '#' + order.id;
+    document.getElementById('confirmName').innerText = order.name;
+    document.getElementById('confirmTotal').innerText = Store.formatCurrency(order.totalAmount);
+
+    // Calculate count
+    const totalQty = order.items.reduce((sum, i) => sum + i.quantity, 0);
+    const countEl = document.getElementById('confirmTotalCount');
+    if (countEl) countEl.innerText = totalQty;
+
+    document.getElementById('confirmItems').innerHTML = order.items.map(item => `
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.95rem;">
+            <span>${item.name} x ${item.quantity}</span>
+            <span>${Store.formatCurrency(item.price * item.quantity)}</span>
+        </div>
+    `).join('');
 }
 
 

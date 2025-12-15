@@ -535,3 +535,235 @@ body {
         width: 100%;
     }
 }
+
+/* === Print Styles === */
+@media print {
+    body.printing-stats {
+        background: white;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+        /* Clip overflow */
+    }
+
+    /* Hide everything by default */
+    body.printing-stats * {
+        visibility: hidden;
+    }
+
+    /* Show Stats Section */
+    body.printing-stats #statsSection,
+    body.printing-stats #statsSection * {
+        visibility: visible;
+    }
+
+    body.printing-stats #statsSection {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        /* Reduced padding */
+        background: white;
+        box-sizing: border-box;
+    }
+
+    /* Reset Card Style for Print */
+    body.printing-stats .card {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: none !important;
+        /* Override potential fixed widths */
+    }
+
+    /* Hide Controls in Print */
+    body.printing-stats button,
+    body.printing-stats .btn,
+    body.printing-stats .no-print {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    /* Table Constraints */
+    body.printing-stats table {
+        width: 100% !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+        /* Strict fixed layout */
+        border-collapse: collapse;
+    }
+
+    body.printing-stats th,
+    body.printing-stats td {
+        word-wrap: break-word;
+        word-break: break-all;
+        /* Force break */
+        white-space: normal !important;
+        /* Prevent nowrap */
+        overflow: hidden;
+    }
+
+    /* Ensure Header doesn't stretch */
+    body.printing-stats .status-card,
+    body.printing-stats div[style*="display:flex"] {
+        display: block !important;
+        /* Flatten flex layouts */
+        width: 100% !important;
+    }
+
+    /* Hide scrollbars */
+    ::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* Progress Stepper */
+.stepper {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 25px;
+    position: relative;
+    padding: 0 10px;
+}
+
+.stepper::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    right: 20px;
+    height: 3px;
+    background: #eee;
+    z-index: 0;
+}
+
+.step {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    color: #ccc;
+    font-size: 0.85rem;
+    width: 33.33%;
+}
+
+.step-circle {
+    width: 32px;
+    height: 32px;
+    background: #fff;
+    border: 3px solid #eee;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 5px;
+    font-weight: bold;
+    color: #ccc;
+    transition: all 0.3s;
+}
+
+.step.active {
+    color: var(--primary-red);
+}
+
+.step.active .step-circle {
+    border-color: var(--primary-red);
+    background: var(--primary-red);
+    color: white;
+    box-shadow: 0 2px 5px rgba(192, 57, 43, 0.3);
+}
+
+.step.done {
+    color: #27ae60;
+}
+
+.step.done .step-circle {
+    border-color: #27ae60;
+    background: #27ae60;
+    color: white;
+}
+
+/* === Print Styles (Override) === */
+@media print {
+    @page {
+        margin: 0.5cm;
+        size: auto;
+    }
+
+    body.printing-stats {
+        /* Reset Body */
+        background: white !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+
+    /* Hide Everything Else (Layout Removal) */
+    body.printing-stats> :not(.main-content),
+    body.printing-stats .main-content> :not(#statsSection),
+    body.printing-stats .sidebar,
+    body.printing-stats .header,
+    body.printing-stats .modal,
+    body.printing-stats .btn,
+    body.printing-stats button,
+    body.printing-stats .no-print {
+        display: none !important;
+    }
+
+    /* Restore Main Content Wrapper */
+    body.printing-stats .main-content {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: static !important;
+        transform: none !important;
+    }
+
+    /* Show & Constraint Stats Section */
+    body.printing-stats #statsSection {
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        position: static !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    body.printing-stats #statsSection * {
+        visibility: visible !important;
+    }
+
+    /* Strict Table Constraints */
+    body.printing-stats table {
+        width: 100% !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+    }
+
+    body.printing-stats th,
+    body.printing-stats td {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        word-break: break-all !important;
+        overflow: hidden !important;
+        padding: 4px !important;
+        border: 1px solid #ddd !important;
+    }
+
+    /* Flatten All Flex Containers */
+    body.printing-stats div {
+        display: block !important;
+        width: 100% !important;
+    }
+}
