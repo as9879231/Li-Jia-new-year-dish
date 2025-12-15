@@ -375,28 +375,25 @@ body {
 /* === Admin Modal Refinement === */
 
 /* Info Table */
-.modal-detail-table {
-    width: 100%;
-    border-collapse: collapse;
+/* Info Grid */
+.modal-info-grid {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 10px;
     margin-bottom: 20px;
+    font-size: 0.95rem;
 }
 
-.modal-detail-table td {
-    padding: 8px 12px;
-    border-bottom: 1px solid #f0f0f0;
-    vertical-align: top;
-}
-
-.modal-detail-table .label-col {
-    width: 80px;
+.modal-info-label {
     color: #666;
     font-weight: 500;
-    white-space: nowrap;
 }
 
-.modal-detail-table .value-col {
+.modal-info-value {
     color: #333;
     font-weight: 500;
+    word-break: break-all;
+    /* Critical for wrapping long phone numbers or names */
 }
 
 .modal-note {
@@ -440,45 +437,78 @@ body {
 /* Action Buttons Layout */
 .modal-actions-container {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    gap: 8px;
+    gap: 15px;
     flex-wrap: wrap;
-    /* Important for mobile */
 }
 
 /* Left Group: Management (Delete, Edit, Close) */
 .action-group-manage {
     display: flex;
-    gap: 5px;
+    justify-content: center;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
 /* Right Group: Status Workflow */
 .action-group-status {
     display: flex;
-    gap: 5px;
+    justify-content: center;
+    gap: 8px;
     flex-wrap: wrap;
+}
+
+/* Make buttons uniform width for neatness */
+.modal-actions-container .btn {
+    min-width: 96px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 4px;
+    /* Reduce side padding since width is fixed */
+}
+
+/* .action-group-edit default */
+.action-group-edit {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 /* Mobile adjustments */
 @media (max-width: 600px) {
     .modal-actions-container {
-        flex-direction: column-reverse;
-        /* Put Status on top or bottom? Let's keep status on bottom but stacked */
-        align-items: stretch;
+        flex-direction: column;
+        gap: 15px;
     }
 
-    .action-group-manage,
     .action-group-status {
-        justify-content: space-between;
         width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
     }
 
-    .action-group-status .btn {
-        flex: 1;
-        /* Equal width buttons */
+    .action-group-manage {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .action-group-edit {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .modal-actions-container .btn {
+        padding: 10px 0;
         text-align: center;
-        padding: 10px;
+        justify-content: center;
+        width: 100%;
     }
 }

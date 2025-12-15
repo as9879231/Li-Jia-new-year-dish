@@ -489,12 +489,14 @@ async function deleteProduct(docId, name) {
 
 // === Order Modal Logic ===
 let curModalOrderId = null;
+let currentOrderData = null;
 
 function openOrderModal(orderId) {
     const order = currentOrders.find(o => o.id == orderId || o.id === orderId); // Loose check
     if (!order) return;
 
     curModalOrderId = orderId;
+    currentOrderData = order;
 
     const modal = document.getElementById('orderModal');
     document.getElementById('modalId').innerText = '#' + order.id;
@@ -512,12 +514,31 @@ function openOrderModal(orderId) {
     document.getElementById('modalItems').innerHTML = itemsHtml;
     document.getElementById('modalTotal').innerText = Store.formatCurrency(order.totalAmount);
 
+    // Reset Actions to Default View Mode
+    const actions = document.querySelector('.modal-actions-container');
+    if (actions) {
+        actions.innerHTML = `
+            <div class="action-group-manage">
+                <button class="btn btn-outline" style="border-color:#ccc; color:#666;" onclick="closeModal()">關閉</button>
+                <button class="btn btn-outline" style="border-color:#3498db; color:#3498db;" onclick="editCurrentOrder()">✏️ 修改</button>
+                <button class="btn btn-outline" style="border-color:#e74c3c; color:#e74c3c;" onclick="deleteCurrentOrder()">🗑️ 刪除</button>
+            </div>
+            
+            <div class="action-group-status">
+                <button class="btn" style="background:#f39c12; color:white; border:none; padding:8px 15px;" onclick="updateStatus('processing')">⏳ 處理中</button>
+                <button class="btn" style="background:#3498db; color:white; border:none; padding:8px 15px;" onclick="updateStatus('confirmed')">🆗 已確認</button>
+                <button class="btn" style="background:#27ae60; color:white; border:none; padding:8px 15px;" onclick="updateStatus('completed')">✅ 已完成</button>
+            </div>
+        `;
+    }
+
     modal.style.display = 'flex';
 }
 
 function closeModal() {
     document.getElementById('orderModal').style.display = 'none';
     curModalOrderId = null;
+    currentOrderData = null;
 }
 
 async function updateStatus(newStatus) {
@@ -815,7 +836,9 @@ async function editCurrentOrder() {
     if (!currentOrderData) return;
 
     const container = document.getElementById('modalItems');
-    container.innerHTML = currentOrderData.items.map((item, index) => `
+
+    // 1. Render existing items
+    const itemsHtml = currentOrderData.items.map((item, index) => `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
             <div style="flex:1;">
                 <div style="font-weight:bold;">${item.name}</div>
@@ -830,14 +853,62 @@ async function editCurrentOrder() {
         </div>
     `).join('');
 
+    // 2. Render Add Item Section
+    // Get products for dropdown
+    const products = Store.products || [];
+    const options = products.map(p => `<option value="${p._id}">${p.name} ($${p.price})</option>`).join('');
+
+    const addSectionHtml = `
+        <div style="margin-top:15px; padding-top:15px; border-top:2px dashed #eee;">
+            <div style="display:flex; gap:10px;">
+                <select id="newItemSelect" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    ${options}
+                </select>
+                <button type="button" class="btn btn-sm" style="background:#2ecc71; color:white;" onclick="addNewItemToEdit()">＋ 新增</button>
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = itemsHtml + addSectionHtml;
+
     const actions = document.querySelector('.modal-actions-container');
     actions.setAttribute('data-original', actions.innerHTML);
     actions.innerHTML = `
-        <div style="width:100%; display:flex; justify-content:flex-end; gap:10px;">
+        <div class="action-group-edit">
             <button class="btn btn-outline" onclick="cancelEditOrder()">取消</button>
             <button class="btn btn-primary" onclick="saveEditedOrder()">💾 儲存變更</button>
         </div>
     `;
+}
+
+function addNewItemToEdit() {
+    // 1. Sync current values to state
+    currentOrderData.items.forEach((item, index) => {
+        const input = document.getElementById(`edit-qty-${index}`);
+        if (input) item.quantity = parseInt(input.value) || 0;
+    });
+
+    // 2. Get new item selection
+    const select = document.getElementById('newItemSelect');
+    const docId = select.value;
+    const product = Store.products.find(p => p._id === docId);
+
+    if (product) {
+        // Check if already exists
+        const existing = currentOrderData.items.find(i => i.name === product.name);
+        if (existing) {
+            existing.quantity += 1;
+            alert(`已增加 "${product.name}" 數量`);
+        } else {
+            currentOrderData.items.push({
+                name: product.name,
+                price: product.price,
+                quantity: 1
+            });
+        }
+        // 3. Re-render
+        editCurrentOrder();
+    }
 }
 
 function adjustEditQty(index, delta) {
@@ -846,33 +917,38 @@ function adjustEditQty(index, delta) {
     val += delta;
     if (val < 0) val = 0;
     input.value = val;
+    // Update state to effectively track for re-renders or save
+    if (currentOrderData.items[index]) {
+        currentOrderData.items[index].quantity = val;
+    }
 }
 
 function removeEditItem(index) {
     if (confirm('確定要刪除此品項嗎？')) {
-        document.getElementById(`edit-qty-${index}`).value = 0;
-        document.getElementById(`edit-qty-${index}`).closest('div').parentElement.style.opacity = '0.3';
+        // Remove from array and re-render
+        currentOrderData.items.splice(index, 1);
+        editCurrentOrder();
     }
 }
 
 async function saveEditedOrder() {
     if (!currentOrderData) return;
-    const newItems = [];
-    let newTotal = 0;
+
+    // Sync one last time just in case (though adjustQty handles it)
     currentOrderData.items.forEach((item, index) => {
         const input = document.getElementById(`edit-qty-${index}`);
-        const qty = parseInt(input.value) || 0;
-        if (qty > 0) {
-            newItems.push({ ...item, quantity: qty });
-            newTotal += item.price * qty;
-        }
+        if (input) item.quantity = parseInt(input.value) || 0;
     });
+
+    const newItems = currentOrderData.items.filter(i => i.quantity > 0);
+    const newTotal = newItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
     try {
         await Store.updateOrder(currentOrderData.id, { items: newItems, totalAmount: newTotal });
         alert('訂單更新成功！');
         closeModal();
-        refreshData();
+        // Reload orders
+        loadOrders();
     } catch (e) {
         alert('更新失敗：' + e.message);
     }

@@ -279,7 +279,10 @@ function verifyOrder(e) {
     `).join('');
 
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
     document.getElementById('preTotal').innerText = Store.formatCurrency(total);
+    document.getElementById('preTotalCount').innerText = totalCount + " 件";
 
     document.getElementById('checkoutModal').classList.remove('active');
     document.getElementById('preOrderModal').style.display = 'flex';
