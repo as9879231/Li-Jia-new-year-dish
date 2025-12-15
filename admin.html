@@ -479,13 +479,14 @@
             <div class="card" style="margin-bottom: 20px;">
                 <h3 style="margin-bottom:20px;">⚙️ 接單狀態設定</h3>
                 <div
-                    style="background:#f9f9f9; padding:20px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee;">
-                    <div>
+                    style="background:#f9f9f9; padding:20px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border:1px solid #eee; flex-wrap: wrap; gap: 15px;">
+                    <div style="flex: 1 1 300px;">
                         <h4 style="margin-bottom:5px;">全站接單控制</h4>
-                        <p style="color:#666; margin:0;" id="orderingStatusText">目前狀態：讀取中...</p>
+                        <p style="color:#666; margin:0; line-height:1.5;" id="orderingStatusText">目前狀態：讀取中...</p>
                     </div>
                     <button id="btnToggleOrdering" class="btn"
-                        style="padding:10px 20px; font-size:1.1rem; font-weight:bold;" onclick="toggleOrderingStatus()">
+                        style="padding:10px 20px; font-size:1rem; font-weight:bold; white-space: nowrap; flex: 1 1 auto;"
+                        onclick="toggleOrderingStatus()">
                         讀取中...
                     </button>
                 </div>
