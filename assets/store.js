@@ -121,10 +121,11 @@ var Store = {
     // New Secure Query Method
     async findOrdersByPhone(phone) {
         try {
-            const { collection, getDocs, query, where } = window.firebase;
+            const { collection, getDocs, query, where, limit } = window.firebase;
             if (!query || !where) throw new Error("Firebase Query features not loaded");
 
-            const q = query(collection(this.db, "orders"), where("phone", "==", phone));
+            // Secure Query: Limit to 5 results to match Security Rules
+            const q = query(collection(this.db, "orders"), where("phone", "==", phone), limit(5));
             const querySnapshot = await getDocs(q);
 
             const orders = [];
