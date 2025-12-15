@@ -290,7 +290,7 @@ function renderMenuAdmin() {
 
     tableBody.innerHTML = products.map((p, index) => `
         <tr>
-            <td>${index + 1}</td>
+            <td style="font-weight:bold;">${p.id}</td>
             <td style="font-weight:bold;">${p.name}</td>
             <td>${p.price}</td>
             <td>
@@ -318,29 +318,54 @@ function renderMenuAdmin() {
 }
 
 async function moveProduct(index, direction) {
-    const products = Store.products;
+    const products = [...Store.products]; // Clone
     const targetIndex = index + direction;
 
     if (targetIndex < 0 || targetIndex >= products.length) return;
 
-    const currentItem = products[index];
-    const targetItem = products[targetIndex];
+    // 1. Move Item in Array
+    const [movedItem] = products.splice(index, 1);
+    products.splice(targetIndex, 0, movedItem);
 
-    // Swap IDs
-    const tempId = currentItem.id;
-    const newId = targetItem.id;
+    // 2. Renumber All
+    await renumberAllProducts(products);
+}
 
-    if (tempId === newId) return;
-
+async function renumberAllProducts(msgProducts) {
     try {
-        await Store.updateProduct(currentItem._id, { id: newId });
-        await Store.updateProduct(targetItem._id, { id: tempId });
+        const { updateDoc, doc } = window.firebase;
+        const updates = [];
+
+        // Disable UI during batch update
+        const btns = document.querySelectorAll('.btn'); // Target only buttons
+        btns.forEach(b => b.disabled = true);
+
+        for (let i = 0; i < msgProducts.length; i++) {
+            const p = msgProducts[i];
+            const newId = i + 1; // Enforce 1-based sequential ID
+
+            if (p.id !== newId) {
+                const ref = doc(Store.db, "products", p._id);
+                updates.push(updateDoc(ref, { id: newId }));
+            }
+        }
+
+        if (updates.length > 0) {
+            await Promise.all(updates);
+            console.log(`Renumbered ${updates.length} products.`);
+        }
 
         await Store.loadProducts();
         renderMenuAdmin();
+
     } catch (e) {
-        console.error(e);
-        alert("排序更新失敗");
+        console.error("Renumber Error:", e);
+        alert("重新編號失敗，請重試");
+        await Store.loadProducts();
+        renderMenuAdmin();
+    } finally {
+        const btns = document.querySelectorAll('.btn');
+        btns.forEach(b => b.disabled = false);
     }
 }
 
@@ -544,14 +569,30 @@ function openOrderModal(orderId) {
         }
     }
 
-    document.getElementById('modalNote').innerText = order.note || '(無)';
+    // Helper to resolve current Live ID
+    const getRealId = (item) => {
+        // Try match by Name (most reliable for legacy orders)
+        if (Store.products) {
+            const found = Store.products.find(p => p.name === item.name);
+            if (found) return found.id;
+        }
+        return item.id || 999;
+    };
 
-    const itemsHtml = order.items.map(i => `
+    // Sort items by CURRENT Menu ID
+    const sortedItems = [...order.items].sort((a, b) => {
+        return (getRealId(a) || 0) - (getRealId(b) || 0);
+    });
+
+    const itemsHtml = sortedItems.map((i, index) => {
+        // const realId = getRealId(i);
+        return `
         <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px dashed #eee; padding-bottom:5px;">
-            <span>${i.name} x ${i.quantity}</span>
+            <span style="font-weight:bold;">${index + 1}.</span>
+            <span style="flex:1; margin-left:5px;">${i.name} x ${i.quantity}</span>
             <span>$${i.price * i.quantity}</span>
         </div>
-    `).join('');
+    `}).join('');
 
     document.getElementById('modalItems').innerHTML = itemsHtml;
     document.getElementById('modalTotal').innerText = Store.formatCurrency(order.totalAmount);
