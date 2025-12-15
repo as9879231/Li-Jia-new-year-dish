@@ -767,3 +767,59 @@ body {
         width: 100% !important;
     }
 }
+
+/* ... existing code ... */
+
+/* Footer Styling */
+.main-footer {
+    background: #2c3e50;
+    color: white;
+    padding: 40px 20px;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.footer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 1.1rem;
+    max-width: 500px;
+    margin: 0 auto;
+    text-align: left;
+    padding: 0 10px;
+}
+
+.footer-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.footer-icon {
+    flex-shrink: 0;
+    width: 24px;
+    text-align: center;
+    padding-top: 2px;
+    /* Visual tweak for emoji alignment */
+}
+
+.footer-text {
+    line-height: 1.6;
+    flex: 1;
+}
+
+/* Ensure links in footer inherit color or special styling */
+.footer-text p {
+    margin: 0;
+}
+
+/* On very small screens, ensure it doesn't touch edges */
+@media (max-width: 480px) {
+    .footer-info {
+        font-size: 1rem;
+        gap: 15px;
+        width: 100%;
+        max-width: 100%;
+    }
+}

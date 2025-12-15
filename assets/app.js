@@ -269,11 +269,11 @@ function verifyOrder(e) {
         return alert('驗證碼錯誤，請重新計算 (證明您不是機器人)');
     }
 
-    // 4. Rate Limiting (60s cooldown)
+    // 4. Rate Limiting (30s cooldown)
     const lastTime = localStorage.getItem('lastOrderTime');
     const now = Date.now();
-    if (lastTime && (now - lastTime < 60000)) {
-        const remaining = Math.ceil((60000 - (now - lastTime)) / 1000);
+    if (lastTime && (now - lastTime < 30000)) {
+        const remaining = Math.ceil((30000 - (now - lastTime)) / 1000);
         return alert(`系統繁忙中，請等待 ${remaining} 秒後再試。`);
     }
 

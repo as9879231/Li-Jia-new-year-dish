@@ -199,12 +199,65 @@ var Store = {
                 transaction.set(doc(this.db, "orders", customId), finalData);
             });
 
-            return { id: finalId, ...orderData };
+            const orderResult = { id: finalId, ...orderData };
+
+            // Send Discord Notification (Fire and Forget)
+            this.sendDiscordNotification(orderResult).catch(err => console.error("Discord Notification Failed:", err));
+
+            return orderResult;
 
         } catch (e) {
             console.error("Error adding order transaction: ", e);
             alert("下單失敗，請稍後再試。原因: " + (e.message || "未知錯誤"));
             throw e;
+        }
+    },
+
+    async sendDiscordNotification(order) {
+        try {
+            // Debug: Use discord.com and encode URI for better proxy handling
+            const targetUrl = "https://discord.com/api/webhooks/1450081622975316074/oLXbBYq-aXZ_jkObEeOWTmwmk8cNOma-Lv0nGitJ27602ELouSOblLHON8T_rRN722jD";
+            // Note: corsproxy.io requires the URL to be NOT encoded usually, but let's try straight format first if encoded fails.
+            // Actually standard usage is ?<url>. Let's try direct first since previous failed.
+            const webhookURL = `https://corsproxy.io/?${targetUrl}`;
+
+            const itemsList = order.items.map(item =>
+                `• ${item.name} x${item.qty} ($${item.total})`
+            ).join('\n');
+
+            const embed = {
+                title: "🎉 新訂單通知！",
+                description: `訂單編號：**${order.id}**`,
+                color: 12008779,
+                fields: [
+                    { name: "👤 訂購人", value: order.name || order.customer?.name || "未知", inline: true },
+                    { name: "📞 電話", value: order.phone || order.customer?.phone || "未知", inline: true },
+                    { name: "💰 總金額", value: `NT$ ${order.totalAmount || order.totalPrice}`, inline: true },
+                    { name: "📋 訂購內容", value: itemsList || "無商品" },
+                    { name: "📝 備註", value: order.note || "無" }
+                ],
+                footer: { text: "李家年菜自動通知系統" },
+                timestamp: new Date().toISOString()
+            };
+
+            console.log("Sending Discord Request to Proxy:", webhookURL);
+
+            const res = await fetch(webhookURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ embeds: [embed] })
+            });
+
+            if (!res.ok) {
+                const errText = await res.text();
+                throw new Error(`Server Error ${res.status}: ${errText}`);
+            }
+
+            // alert("Discord 通知發送成功！ (測試模式)");
+
+        } catch (e) {
+            console.error("Discord Notification Error:", e);
+            alert("Discord 通知失敗 (Debug): " + e.message);
         }
     },
 
