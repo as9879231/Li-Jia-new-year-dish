@@ -31,8 +31,17 @@ async function checkOrderingStatus() {
 }
 
 async function renderMenu() {
-    const products = await Store.getProducts();
     const menuGrid = document.getElementById('menuGrid');
+
+    // Show Loading
+    menuGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>
+            <div>菜單讀取中...</div>
+        </div>
+    `;
+
+    const products = await Store.getProducts();
 
     if (products.length === 0) {
         menuGrid.innerHTML = '<p style="text-align:center; width:100%;">載入菜單失敗，請檢查網路連線或稍後再試。</p>';
