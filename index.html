@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>李家年菜</title>
+    <title>合誼年菜</title>
     <link rel="stylesheet" href="assets/style.css">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/icon.png">
     <link rel="icon" type="image/png" href="assets/icon.png">
@@ -278,7 +278,7 @@
 
     <header>
         <div class="container nav_content">
-            <div class="logo">李家年菜</div>
+            <a href="index.html" class="logo" style="text-decoration:none;">合誼年菜</a>
             <div style="display:flex; gap:15px; align-items:center;">
                 <div class="cart-icon" onclick="openInquiry()">
                     🔍 查訂單
@@ -296,7 +296,7 @@
             <h1 class="hero-title">團圓時刻，家傳好味</h1>
             <p
                 style="color: white; font-size: 1.5rem; margin-bottom: 20px; text-shadow: 1px 1px 4px rgba(0,0,0,0.5); font-weight:bold; background:rgba(192, 57, 43, 0.8); display:inline-block; padding:5px 15px; border-radius:50px;">
-                ⚠️ 訂購截止：國曆 1 月 19 日
+                ⚠️ 訂購截止：國曆 2 月 7 日 / 農曆 12 月 20日
             </p>
             <br>
             <a href="#menu" class="btn btn-primary">立即預訂</a>
@@ -513,7 +513,7 @@
             <div
                 style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px dashed #ccc; margin-bottom:20px; text-align:left;">
                 <h4 style="margin-bottom:10px; color:#2c3e50;">📍 取餐資訊</h4>
-                <p style="margin-bottom:5px;"><strong>地點：</strong>雲林縣古坑鄉新生路7號</p>
+                <p style="margin-bottom:5px;"><strong>地點：</strong>雲林縣古坑鄉西平村新生路7號</p>
                 <p style="margin-bottom:5px;"><strong>時間：</strong><span style="color:#e74c3c; font-weight:bold;">除夕
                         11:00 - 14:00</span></p>
                 <p style="margin-bottom:0px;"><strong>聯絡電話：</strong>0937263952 / (05)5821600</p>
@@ -586,7 +586,7 @@
             <div
                 style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px dashed #ccc; margin-bottom:20px; text-align:left;">
                 <h4 style="margin-bottom:10px; color:#2c3e50;">📍 取餐資訊</h4>
-                <p style="margin-bottom:5px;"><strong>地點：</strong>雲林縣古坑鄉新生路7號</p>
+                <p style="margin-bottom:5px;"><strong>地點：</strong>雲林縣古坑鄉西平村新生路7號</p>
                 <p style="margin-bottom:5px;"><strong>時間：</strong><span style="color:#e74c3c; font-weight:bold;">除夕
                         11:00 - 14:00</span></p>
                 <p style="margin-bottom:0px;"><strong>聯絡電話：</strong>0937263952 / (05)5821600</p>
@@ -605,17 +605,40 @@
         </div>
     </div>
 
+    <!-- Important Notice Modal -->
+    <div class="modal" id="noticeModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+        <div class="modal-content"
+            style="background:white; width:90%; max-width:400px; padding:30px; border-radius:12px; text-align:center; position:relative; box-shadow: 0 5px 25px rgba(0,0,0,0.3);">
+            <div style="font-size:3rem; margin-bottom:15px;">📢</div>
+            <h2 style="color:var(--primary-red); margin-bottom:20px; font-weight:bold;">重要公告</h2>
+            <div
+                style="text-align:left; line-height:1.8; color:#333; font-size:1.1rem; margin-bottom:30px; background:#f9f9f9; padding:15px; border-radius:8px; border-left:5px solid var(--primary-gold);">
+                <p style="margin-bottom:10px;">🔥 <strong>數量有限</strong><br><span
+                        style="font-size:0.95rem; color:#e74c3c; font-weight:bold;">手工製作，售完為止，請儘早預訂！</span></p>
+                <p style="margin-bottom:10px;">⚠️ <strong>僅提供「現場自取」</strong><br><span
+                        style="font-size:0.95rem; color:#666;">本店無提供宅配服務，請至店面取餐。</span></p>
+                <p style="margin-bottom:10px;">💰 <strong>付款方式</strong><br><span
+                        style="font-size:0.95rem; color:#666;">統一為「現場取貨付款 (現金)」。</span></p>
+                <p>📞 <strong>相關問題</strong><br><span style="font-size:0.95rem; color:#666;">若有訂單或其他問題，請直接致電詢問。</span>
+                </p>
+            </div>
+            <button class="btn btn-primary" onclick="closeNoticeModal()"
+                style="width:100%; padding:12px; font-size:1.1rem;">我了解了</button>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="main-footer">
         <div class="container">
-            <h3 style="margin-bottom:20px;">李家年菜</h3>
+            <h3 style="margin-bottom:20px;">合誼年菜</h3>
             <div class="footer-info">
                 <div class="footer-row">
                     <div class="footer-icon">📍</div>
                     <div class="footer-text">
                         <strong>取餐地點：</strong>
-                        <a href="https://www.google.com/maps/search/?api=1&query=雲林縣古坑鄉新生路7號" target="_blank"
-                            style="color:#f1c40f; text-decoration:none;">雲林縣古坑鄉新生路7號 (點擊導航)</a>
+                        <a href="https://www.google.com/maps/search/?api=1&query=雲林縣古坑鄉西平村新生路7號" target="_blank"
+                            style="color:#f1c40f; text-decoration:none;">雲林縣古坑鄉西平村新生路7號 (點擊導航)</a>
                     </div>
                 </div>
                 <div class="footer-row">
@@ -637,11 +660,11 @@
                     <div class="footer-icon">📅</div>
                     <div class="footer-text">
                         <strong>訂購截止：</strong>
-                        <span style="font-weight:bold; color:#f39c12;">國曆 1 月 19 日</span>
+                        <span style="font-weight:bold; color:#f39c12;">國曆 2 月 7 日 / 農曆 12 月 20日</span>
                     </div>
                 </div>
             </div>
-            <p style="margin-top:30px; font-size:0.9rem; color:#95a5a6;">&copy; 2025 李家年菜. All rights reserved.</p>
+            <p style="margin-top:30px; font-size:0.9rem; color:#95a5a6;">&copy; 2025 合誼年菜. All rights reserved.</p>
         </div>
     </footer>
 

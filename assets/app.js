@@ -8,6 +8,10 @@ let cart = [];
 document.addEventListener('DOMContentLoaded', async () => {
     await Store.init();
     await checkOrderingStatus(); // Check system status first
+
+    // Show Important Notice (Before menu renders)
+    openNoticeModal();
+
     await renderMenu();
     updateCartUI();
 });
@@ -446,7 +450,21 @@ async function finalSubmitOrder() {
 
     } catch (e) {
         console.error(e);
-        alert("訂單送出失敗：\n" + (e.message || e));
+        if (e.message.includes("ORDERING_CLOSED")) {
+            alert("⚠️ 很抱歉，本年度年菜訂購剛剛已截止！\n\n系統將自動重新整理以更新狀態。");
+            location.reload();
+        } else if (e.message.includes("PRODUCT_SOLD_OUT")) {
+            const prodName = e.message.split(': ')[1] || "部分商品";
+            alert(`⚠️ 很抱歉，商品「${prodName}」剛剛已售完！\n\n系統將為您重新整理頁面。`);
+            location.reload();
+        } else {
+            alert("訂單送出失敗：\n" + (e.message || e));
+            // Reset button
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = '送出訂單';
+            }
+        }
     } finally {
         // Restore button state
         if (btn) {
@@ -460,7 +478,7 @@ function shareToLine() {
     if (!lastOrder) return;
 
     const itemsText = lastOrder.items.map(i => `${i.name} x${i.quantity}`).join('\n');
-    const text = `【李家年菜】訂單確認 🎉\n\n訂單編號: #${lastOrder.id}\n訂購人: ${lastOrder.name}\n電話: ${lastOrder.phone}\n------------------\n${itemsText}\n------------------\n總金額: ${Store.formatCurrency(lastOrder.totalAmount)}\n\n謝謝您的預訂！我們已收到訂單。`;
+    const text = `【合誼年菜】訂單確認 🎉\n\n訂單編號: #${lastOrder.id}\n訂購人: ${lastOrder.name}\n電話: ${lastOrder.phone}\n------------------\n${itemsText}\n------------------\n總金額: ${Store.formatCurrency(lastOrder.totalAmount)}\n\n謝謝您的預訂！我們已收到訂單。`;
 
     window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank');
 }
@@ -513,3 +531,17 @@ async function viewOrderDetails(orderId) {
 }
 
 
+// Notice Modal
+function openNoticeModal() {
+    // Check session storage to avoid annoyance in same session
+    if (!sessionStorage.getItem('hasSeenNotice')) {
+        const modal = document.getElementById('noticeModal');
+        if (modal) modal.style.display = 'flex';
+    }
+}
+
+function closeNoticeModal() {
+    const modal = document.getElementById('noticeModal');
+    if (modal) modal.style.display = 'none';
+    sessionStorage.setItem('hasSeenNotice', 'true');
+}

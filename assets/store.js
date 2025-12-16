@@ -155,6 +155,26 @@ var Store = {
             let finalId = '';
 
             await runTransaction(this.db, async (transaction) => {
+                // 1. Security Check: Read System Settings FIRST
+                const settingsRef = doc(this.db, "settings", "system");
+                const settingsDoc = await transaction.get(settingsRef);
+
+                if (settingsDoc.exists() && settingsDoc.data().isOrderingOpen === false) {
+                    throw new Error("ORDERING_CLOSED");
+                }
+
+                // 2. Security Check: Verify Stock for ALL items
+                for (const item of orderData.items) {
+                    // Check if item has an ID (it should)
+                    if (item._id) {
+                        const prodRef = doc(this.db, "products", item._id);
+                        const prodDoc = await transaction.get(prodRef);
+                        if (prodDoc.exists() && prodDoc.data().isSoldOut === true) {
+                            throw new Error(`PRODUCT_SOLD_OUT: ${item.name}`);
+                        }
+                    }
+                }
+
                 const counterDoc = await transaction.get(counterRef);
                 let nextNum = 1;
 
@@ -192,10 +212,10 @@ var Store = {
                     createdAt: new Date().toISOString()
                 };
 
-                // 1. Update Counter
+                // 2. Update Counter
                 transaction.set(counterRef, { current: nextNum }, { merge: true });
 
-                // 2. Create Order
+                // 3. Create Order
                 // Use the custom ID as the document key as well for consistency
                 transaction.set(doc(this.db, "orders", customId), finalData);
             });
@@ -209,7 +229,10 @@ var Store = {
 
         } catch (e) {
             console.error("Error adding order transaction: ", e);
-            alert("下單失敗，請稍後再試。原因: " + (e.message || "未知錯誤"));
+            // Don't alert if it's the specific lock error (handled by app.js)
+            if (!e.message.includes("ORDERING_CLOSED") && !e.message.includes("PRODUCT_SOLD_OUT")) {
+                alert("下單失敗，請稍後再試。原因: " + (e.message || "未知錯誤"));
+            }
             throw e;
         }
     },
@@ -237,7 +260,7 @@ var Store = {
                     { name: "📋 訂購內容", value: itemsList || "無商品" },
                     { name: "📝 備註", value: order.note || "無" }
                 ],
-                footer: { text: "李家年菜自動通知系統" },
+                footer: { text: "合誼年菜自動通知系統" },
                 timestamp: new Date().toISOString()
             };
 
