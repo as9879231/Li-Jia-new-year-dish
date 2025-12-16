@@ -995,12 +995,12 @@ async function downloadBackup() {
     link.click();
 }
 
-// Restore function - Simplified
+// Restore function - True Restore
 async function restoreBackup(input) {
     const file = input.files[0];
     if (!file) return;
 
-    if (!confirm('警告：這將會清除現有的所有菜色與訂單，並還原備份檔！\n確定要繼續嗎？')) {
+    if (!confirm('⚠️【嚴重警告】⚠️\n\n這將會「完全清除」現有的所有菜色與訂單，並還原成備份檔的狀態！\n\n此動作無法復原，確定要繼續嗎？')) {
         input.value = ''; // Reset
         return;
     }
@@ -1009,38 +1009,70 @@ async function restoreBackup(input) {
     reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
+            const { getDocs, collection, deleteDoc, doc, setDoc, addDoc } = window.firebase;
 
-            // Restore Products
+            // Helper to clear collection
+            const clearCollection = async (path) => {
+                const snapshot = await getDocs(collection(Store.db, path));
+                const deletePromises = snapshot.docs.map(d => deleteDoc(doc(Store.db, path, d.id)));
+                await Promise.all(deletePromises);
+            };
+
+            // 1. Clear Existing Data
+            console.log("Clearing products...");
+            await clearCollection('products');
+            console.log("Clearing orders...");
+            await clearCollection('orders');
+            // Check if settings need reset? Maybe not.
+
+            // 2. Restore Products
             if (data.products && Array.isArray(data.products)) {
                 let pCount = 0;
                 for (const p of data.products) {
-                    // Remove internal ID just in case, let Firestore gen new ID or check dupe?
-                    // For simplicity, just add.
-                    const { _id, ...pData } = p; // Exclude firestore ID
-                    await Store.addProduct(pData);
+                    // We can use addDoc, but we want to maintain the 'id' (sequence) field
+                    // Firestore auto-id is fine for the doc key, as long as 'id' field is correct.
+                    const { _id, ...pData } = p;
+                    await addDoc(collection(Store.db, "products"), pData);
                     pCount++;
                 }
                 console.log(`Restored ${pCount} products`);
             }
 
-            // Restore Orders
+            // 3. Restore Orders
             if (data.orders && Array.isArray(data.orders)) {
                 let oCount = 0;
+                let maxId = 0;
+
                 for (const o of data.orders) {
-                    // Exclude ID to allow new ID generation
-                    const { id, _id, ...oData } = o;
-                    await Store.addOrder(oData);
+                    // CRITICAL: Use setDoc with the ORIGINAL ID (e.g., "A1")
+                    const { _id, ...oData } = o; // Exclude firestore internal _id if present
+
+                    if (o.id) {
+                        await setDoc(doc(Store.db, "orders", o.id), oData);
+
+                        // Track max ID for counter
+                        const num = parseInt(o.id.replace(/\D/g, '')) || 0;
+                        if (num > maxId) maxId = num;
+                    } else {
+                        // Fallback for weird data
+                        await addDoc(collection(Store.db, "orders"), oData);
+                    }
                     oCount++;
                 }
                 console.log(`Restored ${oCount} orders`);
+
+                // 4. Restore Counter
+                if (maxId > 0) {
+                    await setDoc(doc(Store.db, "settings", "orderCounter"), { current: maxId }, { merge: true });
+                }
             }
 
-            alert('資料還原成功！');
+            alert('✅ 資料還原成功！已恢復到備份狀態。');
             location.reload();
 
         } catch (err) {
-            console.error(err);
-            alert('還原失敗：檔案格式錯誤');
+            console.error("Restore Error:", err);
+            alert('❌ 還原失敗：' + err.message);
         }
     };
     reader.readAsText(file);

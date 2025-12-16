@@ -441,25 +441,31 @@ async function finalSubmitOrder() {
         // Clear Cart & Form
         cart = [];
         updateCartUI();
-        document.getElementById('cxName').value = '';
         document.getElementById('cxPhone').value = '';
-        // Note input removed
 
         // Show Toast
         showToast("訂單已成功送出！");
 
     } catch (e) {
-        console.error(e);
-        if (e.message.includes("ORDERING_CLOSED")) {
-            alert("⚠️ 很抱歉，本年度年菜訂購剛剛已截止！\n\n系統將自動重新整理以更新狀態。");
+        console.error("Submit Error:", e);
+
+        if (e.message.includes('ORDERING_CLOSED')) {
+            alert('⛔ 很抱歉，本店暫時停止接單！\n\n系統將為您重新整理頁面。');
             location.reload();
-        } else if (e.message.includes("PRODUCT_SOLD_OUT")) {
-            const prodName = e.message.split(': ')[1] || "部分商品";
-            alert(`⚠️ 很抱歉，商品「${prodName}」剛剛已售完！\n\n系統將為您重新整理頁面。`);
+        } else if (e.message.includes('PRODUCT_SOLD_OUT')) {
+            const pName = e.message.split(': ')[1] || '商品';
+            alert(`⚠️ 很抱歉，商品「${pName}」剛剛已售完！\n\n系統將為您重新整理頁面。`);
             location.reload();
+        } else if (e.message.includes('DUPLICATE_ORDER_FOUND')) {
+            alert('⚠️ 系統偵測到您已建立過相同訂單。\n\n如需修改或有任何問題，請直接與我們聯絡，謝謝！');
+            // Do not reload, let them see what they typed? Or reload? 
+            // Usually keeping page is fine so they can check, but alert stops action.
+            if (btn) {
+                btn.disabled = false;
+                btn.innerText = '送出訂單';
+            }
         } else {
-            alert("訂單送出失敗：\n" + (e.message || e));
-            // Reset button
+            alert('訂單送出失敗，請檢查網路後重試。\n錯誤訊息: ' + e.message);
             if (btn) {
                 btn.disabled = false;
                 btn.innerText = '送出訂單';

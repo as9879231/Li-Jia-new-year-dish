@@ -143,11 +143,24 @@ var Store = {
 
     async addOrder(orderData) {
         try {
-            const { collection, setDoc, doc, runTransaction, getDocs } = window.firebase;
+            const { collection, setDoc, doc, runTransaction, getDocs, query, where, limit } = window.firebase;
 
             if (!runTransaction) {
                 alert("系統核心元件 (runTransaction) 未載入，請嘗試按 Ctrl+Shift+R 強制重新整理網頁。");
                 throw new Error("Firebase runTransaction import missing. Clear cache.");
+            }
+
+            // 0. Pre-check: Duplicate Order (Name + Phone)
+            // Note: This is done before transaction because transactions don't support queries easily in Client SDK
+            const dupQ = query(
+                collection(this.db, "orders"),
+                where("phone", "==", orderData.phone),
+                where("name", "==", orderData.name),
+                limit(1)
+            );
+            const dupSnap = await getDocs(dupQ);
+            if (!dupSnap.empty) {
+                throw new Error("DUPLICATE_ORDER_FOUND");
             }
 
             const counterRef = doc(this.db, "settings", "orderCounter");
@@ -230,7 +243,7 @@ var Store = {
         } catch (e) {
             console.error("Error adding order transaction: ", e);
             // Don't alert if it's the specific lock error (handled by app.js)
-            if (!e.message.includes("ORDERING_CLOSED") && !e.message.includes("PRODUCT_SOLD_OUT")) {
+            if (!e.message.includes("ORDERING_CLOSED") && !e.message.includes("PRODUCT_SOLD_OUT") && !e.message.includes("DUPLICATE_ORDER_FOUND")) {
                 alert("下單失敗，請稍後再試。原因: " + (e.message || "未知錯誤"));
             }
             throw e;
