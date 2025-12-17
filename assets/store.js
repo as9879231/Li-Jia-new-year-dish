@@ -310,7 +310,7 @@ var Store = {
             console.log("Syncing Order Counter...");
             const allOrders = await getDocs(collection(this.db, "orders"));
 
-            if (allOrders.empty) return;
+            // if (allOrders.empty) return; // FIX: Don't return, allow reset to 0
 
             const existingNums = allOrders.docs
                 .map(d => d.data().id)
