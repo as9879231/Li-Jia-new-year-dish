@@ -567,7 +567,12 @@ function openOrderModal(orderId) {
         } else {
             payStatusEl.innerHTML = '<span style="color:red">未付款</span>';
         }
+
     }
+
+    // Set Note
+    const noteEl = document.getElementById('modalNote');
+    if (noteEl) noteEl.innerText = order.note || "無";
 
     // Helper to resolve current Live ID
     const getRealId = (item) => {
