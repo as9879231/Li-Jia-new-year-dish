@@ -191,46 +191,72 @@ var Store = {
                 const counterDoc = await transaction.get(counterRef);
                 let nextNum = 1;
 
-                if (!counterDoc.exists()) {
-                    // Fallback: If counter doesn't exist, try to count existing orders carefully
-                    // This is a one-time migration step.
-                    try {
-                        const allOrders = await getDocs(collection(this.db, "orders"));
-                        if (!allOrders.empty) {
-                            const existingNums = allOrders.docs
-                                .map(d => d.data().id)
-                                .filter(id => typeof id === 'string' && id.startsWith('A'))
-                                .map(id => parseInt(id.substring(1)))
-                                .filter(n => !isNaN(n));
+                let finalIdToUse = '';
+                let currentCounterVal = counterDoc.exists() ? (counterDoc.data().current || 0) : 0;
 
-                            if (existingNums.length > 0) {
-                                nextNum = Math.max(...existingNums) + 1;
-                            }
-                        }
-                    } catch (e) {
-                        console.warn("Could not read orders for init fallback (likely permission denied). Starting at 1.");
+                if (orderData.customId && orderData.customId.length > 0) {
+                    // Manual ID Logic
+                    finalIdToUse = orderData.customId;
+
+                    // Check if this ID already exists
+                    const existingOrderRef = doc(this.db, "orders", finalIdToUse);
+                    const existingOrderDoc = await transaction.get(existingOrderRef);
+                    if (existingOrderDoc.exists()) {
+                        throw new Error(`訂單編號重複: ${finalIdToUse}`);
                     }
+
+                    // Optional: Try to update counter if custom ID is a pure "A+Number" format and is greater than current
+                    if (finalIdToUse.startsWith('A')) {
+                        const numPart = parseInt(finalIdToUse.substring(1));
+                        if (!isNaN(numPart) && numPart > currentCounterVal) {
+                            transaction.set(counterRef, { current: numPart }, { merge: true });
+                        }
+                    }
+
                 } else {
-                    nextNum = (counterDoc.data().current || 0) + 1;
+                    // Auto-Generate Logic
+                    if (!counterDoc.exists()) {
+                        // (Same fallback logic as before, abbreviated here or kept if identical context fits)
+                        // Note: To keep diff small, I will simplify fallback or rely on previous "if !counterDoc.exists" structure if possible.
+                        // But since I am rewriting the block, I should copy the fallback logic.
+
+                        try {
+                            const allOrders = await getDocs(collection(this.db, "orders"));
+                            if (!allOrders.empty) {
+                                const existingNums = allOrders.docs
+                                    .map(d => d.data().id)
+                                    .filter(id => typeof id === 'string' && id.startsWith('A'))
+                                    .map(id => parseInt(id.substring(1)))
+                                    .filter(n => !isNaN(n));
+
+                                if (existingNums.length > 0) {
+                                    currentCounterVal = Math.max(...existingNums);
+                                }
+                            }
+                        } catch (e) {
+                            console.warn("Fallback init failed");
+                        }
+                    }
+
+                    nextNum = currentCounterVal + 1;
+                    finalIdToUse = `A${nextNum}`;
+
+                    // Update Counter
+                    transaction.set(counterRef, { current: nextNum }, { merge: true });
                 }
 
-                const customId = `A${nextNum}`;
-                finalId = customId;
+                finalId = finalIdToUse;
 
                 const finalData = {
                     ...orderData,
-                    id: customId,
+                    id: finalIdToUse,
                     status: 'processing',
                     paymentStatus: 'unpaid',
                     createdAt: new Date().toISOString()
                 };
 
-                // 2. Update Counter
-                transaction.set(counterRef, { current: nextNum }, { merge: true });
-
                 // 3. Create Order
-                // Use the custom ID as the document key as well for consistency
-                transaction.set(doc(this.db, "orders", customId), finalData);
+                transaction.set(doc(this.db, "orders", finalIdToUse), finalData);
             });
 
             const orderResult = { id: finalId, ...orderData };
@@ -243,7 +269,7 @@ var Store = {
         } catch (e) {
             console.error("Error adding order transaction: ", e);
             // Don't alert if it's the specific lock error (handled by app.js)
-            if (!e.message.includes("ORDERING_CLOSED") && !e.message.includes("PRODUCT_SOLD_OUT") && !e.message.includes("DUPLICATE_ORDER_FOUND")) {
+            if (!e.message.includes("ORDERING_CLOSED") && !e.message.includes("PRODUCT_SOLD_OUT") && !e.message.includes("DUPLICATE_ORDER_FOUND") && !e.message.includes("訂單編號重複")) {
                 alert("下單失敗，請稍後再試。原因: " + (e.message || "未知錯誤"));
             }
             throw e;

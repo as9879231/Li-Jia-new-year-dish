@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await checkOrderingStatus(); // Check system status first
 
     // Show Important Notice (Before menu renders)
-    openNoticeModal();
+    // Show Important Notice (Removed)
+    // openNoticeModal();
 
     await renderMenu();
     updateCartUI();
@@ -213,7 +214,7 @@ function initCaptcha(type) {
 
 // Open Functions with Captcha Init
 function openInquiry() {
-    initCaptcha('inquiry');
+    // initCaptcha('inquiry');
     document.getElementById('inquiryModal').style.display = 'flex';
     document.getElementById('searchResults').innerHTML = ''; // Clear prev results
     document.getElementById('searchPhone').value = '';
@@ -234,7 +235,7 @@ function openCheckout() {
     if (!isSystemOpen) return alert('很抱歉，本年度訂購已截止。');
     if (cart.length === 0) return alert('請先加入商品到購物車');
 
-    initCaptcha('checkout'); // Init Captcha
+    // initCaptcha('checkout'); // Init Captcha
     document.getElementById('checkoutModal').classList.add('active');
     toggleCart(false);
 }
@@ -256,30 +257,19 @@ function verifyOrder(e) {
 
     const name = document.getElementById('cxName').value.trim();
     const phoneInput = document.getElementById('cxPhone').value.trim();
-    const captchaInput = parseInt(document.getElementById('checkoutCaptchaAnswer').value);
+    const customId = document.getElementById('cxCustomId').value.trim();
 
+    if (!customId) return showToast('請填寫訂單編號');
     if (!name) return showToast('請填寫訂購人姓名');
 
-    // 2. Phone Validation (Flexible)
-    const cleanPhone = phoneInput.replace(/[\s\-\(\)]/g, '');
-    // Allow 7-10 digits (Landline or Mobile)
-    if (!/^\d+$/.test(cleanPhone) || cleanPhone.length < 7 || cleanPhone.length > 10) {
-        return alert('電話號碼格式錯誤 (請輸入 7-10 碼數字)');
-    }
+    // 2. Phone Validation (Removed)
+    // const cleanPhone = phoneInput.replace(/[\s\-\(\)]/g, '');
+    // if (!/^\d+$/.test(cleanPhone) || cleanPhone.length < 7 || cleanPhone.length > 10) {
+    //     return alert('電話號碼格式錯誤 (請輸入 7-10 碼數字)');
+    // }
 
-    // 3. Math CAPTCHA Check
-    if (captchaInput !== captchaAnswers.checkout) {
-        initCaptcha('checkout'); // Refresh on error
-        return alert('驗證碼錯誤，請重新計算 (證明您不是機器人)');
-    }
-
-    // 4. Rate Limiting (30s cooldown)
-    const lastTime = localStorage.getItem('lastOrderTime');
-    const now = Date.now();
-    if (lastTime && (now - lastTime < 30000)) {
-        const remaining = Math.ceil((30000 - (now - lastTime)) / 1000);
-        return alert(`系統繁忙中，請等待 ${remaining} 秒後再試。`);
-    }
+    // 3. (Removed Captcha)
+    // 4. (Removed Rate Limit)
 
     // Pass checks
     document.getElementById('preName').innerText = name;
@@ -310,12 +300,7 @@ async function searchOrder() {
     const hp = document.getElementById('hp_inq').value;
     if (hp) return;
 
-    // 2. Math Captcha Check
-    const captchaInput = parseInt(document.getElementById('inquiryCaptchaAnswer').value);
-    if (captchaInput !== captchaAnswers.inquiry) {
-        initCaptcha('inquiry'); // Refresh on error
-        return alert('驗證碼錯誤，請重新計算');
-    }
+    // 2. (Removed Captcha)
 
     const phoneInput = document.getElementById('searchPhone').value.trim();
     if (!phoneInput) {
@@ -401,9 +386,10 @@ async function finalSubmitOrder() {
 
     // Data is already in form inputs, just read again
     const orderData = {
+        customId: document.getElementById('cxCustomId').value.trim().toUpperCase(), // Auto uppercase
         name: document.getElementById('cxName').value,
         phone: document.getElementById('cxPhone').value,
-        note: '', // Removed user input
+        note: document.getElementById('cxNote').value.trim(),
         items: cart,
         totalAmount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     };
@@ -411,8 +397,8 @@ async function finalSubmitOrder() {
     try {
         const newOrder = await Store.addOrder(orderData);
 
-        // Anti-Spam: Set Cooldown
-        localStorage.setItem('lastOrderTime', Date.now());
+        // Anti-Spam: Set Cooldown (Removed for internal use)
+        // localStorage.setItem('lastOrderTime', Date.now());
 
         lastOrder = newOrder; // Store for valid LINE sharing
 
@@ -441,7 +427,9 @@ async function finalSubmitOrder() {
         // Clear Cart & Form
         cart = [];
         updateCartUI();
+        document.getElementById('cxCustomId').value = '';
         document.getElementById('cxPhone').value = '';
+        document.getElementById('cxNote').value = '';
 
         // Show Toast
         showToast("訂單已成功送出！");
@@ -464,6 +452,8 @@ async function finalSubmitOrder() {
                 btn.disabled = false;
                 btn.innerText = '送出訂單';
             }
+        } else if (err.message.includes("訂單編號重複")) {
+            alert("⚠️ 此訂單編號已存在，請更換一個編號。");
         } else {
             alert('訂單送出失敗，請檢查網路後重試。\n錯誤訊息: ' + e.message);
             if (btn) {
