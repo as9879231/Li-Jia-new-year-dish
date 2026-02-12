@@ -168,17 +168,34 @@ var Store = {
                     throw new Error("ORDERING_CLOSED");
                 }
 
-                // 2. Security Check: Verify Stock for ALL items
-                for (const item of orderData.items) {
-                    // Check if item has an ID (it should)
-                    if (item._id) {
-                        const prodRef = doc(this.db, "products", item._id);
-                        const prodDoc = await transaction.get(prodRef);
-                        if (prodDoc.exists() && prodDoc.data().isSoldOut === true) {
-                            throw new Error(`PRODUCT_SOLD_OUT: ${item.name}`);
-                        }
+                // 2. Security Check: Verify Stock for ALL items (Parallelized for Speed)
+                const productReads = orderData.items
+                    .filter(item => item._id) // Only check items with ID
+                    .map(item => transaction.get(doc(this.db, "products", item._id)));
+
+                const productDocs = await Promise.all(productReads);
+
+                productDocs.forEach((prodDoc, index) => {
+                    if (prodDoc.exists() && prodDoc.data().isSoldOut === true) {
+                        // We need the name, but productReads index matches orderData.items... wait, filter might shift index.
+                        // Safe approach matches by ID or just use the doc data if available? 
+                        // Actually easier to just map the check.
+                        // Let's rely on the fact that if filter removed something, we won't check it.
+                        // But error message needs name. 
+                        // Let's refine the map to keep context.
                     }
-                }
+                });
+
+                // Re-implementation with context preservation:
+                const itemsToCheck = orderData.items.filter(item => item._id);
+                const itemRefs = itemsToCheck.map(item => doc(this.db, "products", item._id));
+                const itemDocs = await Promise.all(itemRefs.map(ref => transaction.get(ref)));
+
+                itemDocs.forEach((doc, index) => {
+                    if (doc.exists() && doc.data().isSoldOut === true) {
+                        throw new Error(`PRODUCT_SOLD_OUT: ${itemsToCheck[index].name}`);
+                    }
+                });
 
                 const counterDoc = await transaction.get(counterRef);
                 let nextNum = 1;
