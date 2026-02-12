@@ -428,6 +428,7 @@ async function finalSubmitOrder() {
         cart = [];
         updateCartUI();
         document.getElementById('cxCustomId').value = '';
+        document.getElementById('cxName').value = '';
         document.getElementById('cxPhone').value = '';
         document.getElementById('cxNote').value = '';
 
