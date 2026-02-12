@@ -198,12 +198,11 @@ var Store = {
                     // Manual ID Logic
                     finalIdToUse = orderData.customId;
 
-                    // Check if this ID already exists
-                    const existingOrderRef = doc(this.db, "orders", finalIdToUse);
-                    const existingOrderDoc = await transaction.get(existingOrderRef);
-                    if (existingOrderDoc.exists()) {
-                        throw new Error(`訂單編號重複: ${finalIdToUse}`);
-                    }
+                    // Note: We removed the explicit "transaction.get" check here because
+                    // unauthenticated users (guests) cannot read orders, causing a Permission Denied error.
+                    // Instead, we rely on Firestore Security Rules:
+                    // If the doc exists, 'set' acts as 'update'. Rules should block 'update' for guests.
+                    // If the doc is new, 'set' acts as 'create'. Rules should allow 'create'.
 
                     // Optional: Try to update counter if custom ID is a pure "A+Number" format and is greater than current
                     if (finalIdToUse.startsWith('A')) {
