@@ -150,18 +150,10 @@ var Store = {
                 throw new Error("Firebase runTransaction import missing. Clear cache.");
             }
 
-            // 0. Pre-check: Duplicate Order (Name + Phone)
-            // Note: This is done before transaction because transactions don't support queries easily in Client SDK
-            const dupQ = query(
-                collection(this.db, "orders"),
-                where("phone", "==", orderData.phone),
-                where("name", "==", orderData.name),
-                limit(1)
-            );
-            const dupSnap = await getDocs(dupQ);
-            if (!dupSnap.empty) {
-                throw new Error("DUPLICATE_ORDER_FOUND");
-            }
+            // 0. Pre-check: Duplicate Order (Removed per request)
+            // const dupQ = query(...)
+            // const dupSnap = await getDocs(dupQ);
+            // if (!dupSnap.empty) throw new Error("DUPLICATE_ORDER_FOUND");
 
             const counterRef = doc(this.db, "settings", "orderCounter");
 
