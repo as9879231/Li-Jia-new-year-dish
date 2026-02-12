@@ -1094,6 +1094,10 @@ async function editCurrentOrder() {
 
     const container = document.getElementById('modalItems');
 
+    // 0. Toggle Name/Phone to Edit Mode
+    document.getElementById('modalName').innerHTML = `<input type="text" id="edit-name" value="${currentOrderData.name || ''}" style="width:90%; padding:5px; border:1px solid #ddd; border-radius:4px;">`;
+    document.getElementById('modalPhone').innerHTML = `<input type="text" id="edit-phone" value="${currentOrderData.phone || ''}" style="width:90%; padding:5px; border:1px solid #ddd; border-radius:4px;">`;
+
     // 1. Render existing items
     const itemsHtml = currentOrderData.items.map((item, index) => `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;">
@@ -1207,12 +1211,24 @@ async function saveEditedOrder() {
     const newItems = currentOrderData.items.filter(i => i.quantity > 0);
     const newTotal = newItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
 
-    // Get Note
     const noteInput = document.getElementById('edit-note');
     const newNote = noteInput ? noteInput.value.trim() : (currentOrderData.note || '');
 
+    // Get Name & Phone
+    const nameInput = document.getElementById('edit-name');
+    const newName = nameInput ? nameInput.value.trim() : currentOrderData.name;
+
+    const phoneInput = document.getElementById('edit-phone');
+    const newPhone = phoneInput ? phoneInput.value.trim() : currentOrderData.phone;
+
     try {
-        await Store.updateOrder(currentOrderData.id, { items: newItems, totalAmount: newTotal, note: newNote });
+        await Store.updateOrder(currentOrderData.id, {
+            items: newItems,
+            totalAmount: newTotal,
+            note: newNote,
+            name: newName,
+            phone: newPhone
+        });
         alert('訂單更新成功！');
 
         // Removed closeModal(); 
