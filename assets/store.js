@@ -160,46 +160,31 @@ var Store = {
             let finalId = '';
 
             await runTransaction(this.db, async (transaction) => {
-                // 1. Security Check: Read System Settings FIRST
+                // 1. Parallel Reads: Settings, Counter, and Products (1 RTT)
                 const settingsRef = doc(this.db, "settings", "system");
-                const settingsDoc = await transaction.get(settingsRef);
+                const itemsToCheck = orderData.items.filter(item => item._id);
+                const productRefs = itemsToCheck.map(item => doc(this.db, "products", item._id));
 
+                // Bundle all reads into a single Promise.all
+                const [settingsDoc, counterDoc, ...productDocs] = await Promise.all([
+                    transaction.get(settingsRef),
+                    transaction.get(counterRef),
+                    ...productRefs.map(ref => transaction.get(ref))
+                ]);
+
+                // 2. Logic Checks
                 if (settingsDoc.exists() && settingsDoc.data().isOrderingOpen === false) {
                     throw new Error("ORDERING_CLOSED");
                 }
 
-                // 2. Security Check: Verify Stock for ALL items (Parallelized for Speed)
-                const productReads = orderData.items
-                    .filter(item => item._id) // Only check items with ID
-                    .map(item => transaction.get(doc(this.db, "products", item._id)));
-
-                const productDocs = await Promise.all(productReads);
-
-                productDocs.forEach((prodDoc, index) => {
-                    if (prodDoc.exists() && prodDoc.data().isSoldOut === true) {
-                        // We need the name, but productReads index matches orderData.items... wait, filter might shift index.
-                        // Safe approach matches by ID or just use the doc data if available? 
-                        // Actually easier to just map the check.
-                        // Let's rely on the fact that if filter removed something, we won't check it.
-                        // But error message needs name. 
-                        // Let's refine the map to keep context.
-                    }
-                });
-
-                // Re-implementation with context preservation:
-                const itemsToCheck = orderData.items.filter(item => item._id);
-                const itemRefs = itemsToCheck.map(item => doc(this.db, "products", item._id));
-                const itemDocs = await Promise.all(itemRefs.map(ref => transaction.get(ref)));
-
-                itemDocs.forEach((doc, index) => {
+                // Check Stock
+                productDocs.forEach((doc, index) => {
                     if (doc.exists() && doc.data().isSoldOut === true) {
                         throw new Error(`PRODUCT_SOLD_OUT: ${itemsToCheck[index].name}`);
                     }
                 });
 
-                const counterDoc = await transaction.get(counterRef);
                 let nextNum = 1;
-
                 let finalIdToUse = '';
                 let currentCounterVal = counterDoc.exists() ? (counterDoc.data().current || 0) : 0;
 
@@ -224,10 +209,6 @@ var Store = {
                 } else {
                     // Auto-Generate Logic
                     if (!counterDoc.exists()) {
-                        // (Same fallback logic as before, abbreviated here or kept if identical context fits)
-                        // Note: To keep diff small, I will simplify fallback or rely on previous "if !counterDoc.exists" structure if possible.
-                        // But since I am rewriting the block, I should copy the fallback logic.
-
                         try {
                             const allOrders = await getDocs(collection(this.db, "orders"));
                             if (!allOrders.empty) {
