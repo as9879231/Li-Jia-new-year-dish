@@ -435,6 +435,8 @@ async function finalSubmitOrder() {
         // Show Toast
         showToast("訂單已成功送出！");
 
+
+
     } catch (e) {
         console.error("Submit Error:", e);
 
@@ -482,6 +484,14 @@ function shareToLine() {
 
 function closeConfirmation() {
     document.getElementById('confirmationModal').style.display = 'none';
+    // Scroll to top when closing the success modal
+    // Scroll to Menu section for next order
+    const menuSection = document.getElementById('menu');
+    if (menuSection) {
+        menuSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 }
 
 function printOrder() {
