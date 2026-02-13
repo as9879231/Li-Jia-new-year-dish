@@ -144,13 +144,30 @@ function closeSidebarOutside(e) {
 var currentOrders = [];
 
 function searchOrders() {
-    const term = document.getElementById('searchInput').value.trim().toLowerCase();
+    let term = document.getElementById('searchInput').value.trim().toLowerCase();
+
+    // Specific Search (starts with #)
+    if (term.startsWith('#')) {
+        const idTerm = term.substring(1);
+
+        if (!idTerm) {
+            renderOrders(currentOrders);
+            return;
+        }
+
+        const filtered = currentOrders.filter(o =>
+            o.id && o.id.toString().toLowerCase() === idTerm
+        );
+        renderOrders(filtered);
+        return;
+    }
 
     if (!term) {
         renderOrders(currentOrders);
         return;
     }
 
+    // Broad Search (ID, Name, Phone)
     const filtered = currentOrders.filter(o =>
         (o.id && o.id.toString().toLowerCase().includes(term)) ||
         (o.name && o.name.toLowerCase().includes(term)) ||
@@ -920,7 +937,7 @@ async function exportToExcel() {
     const productNames = products.map(p => p.name);
     headers = headers.concat(productNames);
     // End headers
-    headers = headers.concat(['總金額', '狀態', '訂購時間']);
+    headers = headers.concat(['付款狀態', '總金額', '狀態', '訂購時間']);
 
     let csvContent = headers.join(',') + "\n";
 
@@ -947,7 +964,6 @@ async function exportToExcel() {
         productNames.forEach(pName => {
             const qty = itemMap[pName] || 0;
             // Leave empty if 0 for cleaner look, or '0' if preferred. Let's use qty or empty string.
-            // User likely wants to see numbers. '0' or ''? '0' is explicit.
             // Logic: if qty > 0 show qty, else empty string (cleaner for sparse matrix)
             row.push(qty > 0 ? qty : '');
         });
@@ -960,7 +976,9 @@ async function exportToExcel() {
             'unpaid': '未付款'
         };
         const statusText = statusMap[o.status] || o.status;
+        const payStatus = o.paymentStatus === 'paid' ? '已付款' : '未付款';
 
+        row.push(payStatus);
         row.push(o.totalAmount);
         row.push(statusText);
         row.push(Store.formatDate(o.createdAt));
@@ -1094,9 +1112,10 @@ async function editCurrentOrder() {
 
     const container = document.getElementById('modalItems');
 
-    // 0. Toggle Name/Phone to Edit Mode
-    document.getElementById('modalName').innerHTML = `<input type="text" id="edit-name" value="${currentOrderData.name || ''}" style="width:90%; padding:5px; border:1px solid #ddd; border-radius:4px;">`;
-    document.getElementById('modalPhone').innerHTML = `<input type="text" id="edit-phone" value="${currentOrderData.phone || ''}" style="width:90%; padding:5px; border:1px solid #ddd; border-radius:4px;">`;
+    // 0. Toggle ID/Name/Phone to Edit Mode
+    document.getElementById('modalId').innerHTML = `<input type="text" id="edit-id" value="${currentOrderData.id}" style="width:140px; font-size:1.2rem; font-weight:bold; padding:5px; border:1px solid #ddd; border-radius:4px;">`;
+    document.getElementById('modalName').innerHTML = `<input type="text" id="edit-name" value="${currentOrderData.name || ''}" style="width:100%; box-sizing:border-box; padding:5px; border:1px solid #ddd; border-radius:4px;">`;
+    document.getElementById('modalPhone').innerHTML = `<input type="text" id="edit-phone" value="${currentOrderData.phone || ''}" style="width:100%; box-sizing:border-box; padding:5px; border:1px solid #ddd; border-radius:4px;">`;
 
     // 1. Render existing items
     const itemsHtml = currentOrderData.items.map((item, index) => `
@@ -1221,17 +1240,41 @@ async function saveEditedOrder() {
     const phoneInput = document.getElementById('edit-phone');
     const newPhone = phoneInput ? phoneInput.value.trim() : currentOrderData.phone;
 
+    // Get New ID
+    const idInput = document.getElementById('edit-id');
+    const newId = idInput ? idInput.value.trim().toUpperCase() : currentOrderData.id;
+
+    if (!newId) {
+        alert("訂單編號不能為空！");
+        return;
+    }
+
     try {
-        await Store.updateOrder(currentOrderData.id, {
+        const updateData = {
             items: newItems,
             totalAmount: newTotal,
             note: newNote,
             name: newName,
             phone: newPhone
-        });
+        };
+
+        if (newId !== currentOrderData.id) {
+            // ID Changed: Use Change Order ID Transaction
+            if (confirm(`確定要修改訂單編號嗎？\n原編號：${currentOrderData.id}\n新編號：${newId}\n(注意：這會視為建立新訂單並刪除舊訂單)`)) {
+                await Store.changeOrderId(currentOrderData.id, newId, { ...currentOrderData, ...updateData });
+
+                // IMPORTANT: Update local currentOrderData.id so subsequent reloads work
+                currentOrderData.id = newId;
+            } else {
+                return; // Cancel save if rejected
+            }
+        } else {
+            // ID Not Changed: Regular Update
+            await Store.updateOrder(currentOrderData.id, updateData);
+        }
+
         alert('訂單更新成功！');
 
-        // Removed closeModal(); 
         // Reload orders first to get fresh data
         await loadOrders();
 
@@ -1239,7 +1282,12 @@ async function saveEditedOrder() {
         openOrderModal(currentOrderData.id);
 
     } catch (e) {
-        alert('更新失敗：' + e.message);
+        console.error(e);
+        if (e.message.includes('NEW_ID_EXISTS')) {
+            alert('修改失敗：新編號已存在！請使用其他編號。');
+        } else {
+            alert('更新失敗：' + e.message);
+        }
     }
 }
 

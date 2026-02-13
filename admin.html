@@ -11,9 +11,10 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, runTransaction, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        window.firebase = { initializeApp, getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, Timestamp, getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+        window.firebase = { initializeApp, getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, runTransaction, Timestamp, getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+        console.log("Admin Firebase loaded, runTransaction exported:", !!runTransaction);
     </script>
     <style>
         body {
@@ -527,6 +528,9 @@
                 </div>
             </div>
         </section>
+        <div style="text-align: center; margin-top: 20px; color: #95a5a6; font-size: 0.8rem;">
+            &copy; 2025 合誼年菜 - 後台管理系統 (System v1.7)
+        </div>
     </main>
 
     <!-- Detail Modal -->
@@ -643,11 +647,10 @@
     </div>
 
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="assets/store.js?v=2"></script>
-    <script src="assets/admin.js?v=2"></script>
+    <!-- Compat scripts removed as we use module imports above -->
+    <script src="assets/store.js?v=7"></script>
+    <script src="assets/admin.js?v=7"></script>
+
 </body>
 
 </html>

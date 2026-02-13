@@ -14,12 +14,11 @@
         import { getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, runTransaction, query, where, limit, Timestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-        // Makes Firebase available globally for store.js (which we will convert to module or just attach to window)
-        // Since existing app is not module-based, exposing to window is easiest migration path without rewriting everything
+        // Makes Firebase available globally for store.js
         window.firebase = { initializeApp, getFirestore, collection, getDoc, addDoc, setDoc, getDocs, updateDoc, deleteDoc, doc, runTransaction, query, where, limit, Timestamp, getAuth };
+        console.log("Firebase module loaded, runTransaction exported:", !!runTransaction);
     </script>
 
-    <script src="assets/store.js"></script>
     <style>
         /* Page Specific Styles */
         header {
@@ -47,27 +46,22 @@
             padding: 5px 15px;
             border-radius: 4px;
             white-space: nowrap;
-            /* Prevent wrapping */
         }
 
         /* Mobile Header Adjustments */
         @media (max-width: 480px) {
             .logo {
                 font-size: 1.4rem;
-                /* Smaller font on mobile */
                 padding: 5px 10px;
-                /* Reduced padding */
                 letter-spacing: 1px;
             }
 
             .nav_content {
                 gap: 5px;
-                /* Force small gap to prevent overlap */
             }
 
             .cart-icon {
                 font-size: 0.95rem;
-                /* Smaller icons */
                 gap: 4px;
             }
         }
@@ -135,16 +129,11 @@
             font-weight: bold;
             background: rgba(192, 57, 43, 0.8);
             display: inline-flex;
-            /* Use flex for alignment */
             flex-wrap: wrap;
-            /* Allow wrapping */
             justify-content: center;
-            /* Center items */
             gap: 0 8px;
-            /* Spacing between items */
             align-items: center;
             padding: 8px 25px;
-            /* Slightly more padding */
             border-radius: 50px;
             font-family: 'Noto Sans TC', sans-serif;
         }
@@ -156,9 +145,7 @@
                 width: 90%;
                 line-height: 1.5;
                 flex-direction: column;
-                /* Stack on very small screens if needed, or just wrap */
                 gap: 2px;
-                /* Closer gap on mobile */
             }
         }
 
@@ -191,7 +178,6 @@
             flex-direction: column;
         }
 
-        /* Festive accent for text-only cards */
         .dish-card::before {
             content: '';
             position: absolute;
@@ -235,18 +221,14 @@
             font-family: 'Noto Sans TC';
             line-height: 1.8;
             flex-grow: 1;
-            /* Pushes meta to bottom */
         }
-
 
         .dish-meta {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: auto;
-            /* Ensures it stays at bottom */
             padding-top: 20px;
-            /* Add some separation if desc is full */
         }
 
         .dish-price {
@@ -413,7 +395,6 @@
                     <input type="text" class="form-input" id="cxNote" placeholder="例如：少油、不加蔥..." autocomplete="off">
                 </div>
 
-                <!-- Math CAPTCHA Removed -->
                 <div style="display: flex; gap: 10px;">
                     <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeCheckout()">取消</button>
                     <button type="submit" class="btn btn-primary" style="flex: 1;">送出訂單</button>
@@ -437,8 +418,6 @@
                 <input type="text" name="website_url_inq" id="hp_inq"
                     style="opacity:0; position:absolute; top:0; left:0; height:0; width:0; z-index:-1;" tabindex="-1"
                     autocomplete="off">
-
-                <!-- Math CAPTCHA Removed -->
 
                 <button class="btn btn-primary" style="width:100%;" onclick="searchOrder()">查詢訂單</button>
             </div>
@@ -516,7 +495,6 @@
                     <strong style="width:80px;">付款方式:</strong>
                     <span style="color:var(--primary-red); font-weight:bold;">現場付款</span>
                 </div>
-                <!-- Note Removed -->
             </div>
 
             <div style="margin-bottom: 20px;">
@@ -529,8 +507,6 @@
                     總計: <span id="preTotal"></span>
                 </div>
             </div>
-
-            <!-- Pickup Info Removed -->
 
             <div style="display: flex; gap: 10px;">
                 <button type="button" class="btn btn-outline" style="flex: 1;" onclick="backToEdit()">返回修改</button>
@@ -618,9 +594,6 @@
         </div>
     </div>
 
-    <!-- Important Notice Modal -->
-    <!-- Important Notice Modal Removed -->
-
     <!-- Footer -->
     <footer class="main-footer">
         <div class="container">
@@ -657,14 +630,15 @@
                     </div>
                 </div>
             </div>
-            <p style="margin-top:30px; font-size:0.9rem; color:#95a5a6;">&copy; 2025 合誼年菜. All rights reserved.</p>
+            <p style="margin-top:30px; font-size:0.9rem; color:#95a5a6;">&copy; 2025 合誼年菜. All rights reserved. (System
+                v1.7)</p>
         </div>
     </footer>
 
     <div id="toast" class="toast">訂單已成功送出！</div>
 
-    <script src="assets/store.js?v=5"></script>
-    <script src="assets/app.js?v=5"></script>
+    <script src="assets/store.js?v=7"></script>
+    <script src="assets/app.js?v=7"></script>
 </body>
 
 </html>

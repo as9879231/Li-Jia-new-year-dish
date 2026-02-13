@@ -453,5 +453,35 @@ var Store = {
             console.error("Update Settings Error:", e);
             throw e;
         }
+    },
+
+    async changeOrderId(oldId, newId, data) {
+        try {
+            const { runTransaction, doc } = window.firebase;
+
+            if (!runTransaction) {
+                alert("系統核心元件 (runTransaction) 未載入！\n\n請按 Ctrl + Shift + R 強制重新整理網頁，以更新系統設定。");
+                throw new Error("runTransaction missing - Refresh Required");
+            }
+
+            await runTransaction(this.db, async (transaction) => {
+                const newRef = doc(this.db, "orders", newId);
+                const oldRef = doc(this.db, "orders", oldId);
+
+                // Check if new ID exists
+                const newDoc = await transaction.get(newRef);
+                if (newDoc.exists()) {
+                    throw new Error("NEW_ID_EXISTS");
+                }
+
+                // Create new, delete old
+                transaction.set(newRef, { ...data, id: newId });
+                transaction.delete(oldRef);
+            });
+            return true;
+        } catch (e) {
+            console.error("Change Order ID Error:", e);
+            throw e;
+        }
     }
 };
