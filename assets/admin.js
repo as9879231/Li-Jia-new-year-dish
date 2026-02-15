@@ -745,11 +745,12 @@ async function deleteCurrentOrder() {
 }
 
 // Kitchen Stats
-function loadStats() {
-    // Simple aggregation
-    const itemMap = {};
+async function loadStats() {
+    // 1. Get Products (for correct order)
+    const products = await Store.getProducts();
 
-    // Filter active orders
+    // 2. Aggregate Order Quantities
+    const itemMap = {};
     const activeOrders = currentOrders.filter(o => o.status === 'new' || o.status === 'processing' || o.status === 'confirmed');
 
     activeOrders.forEach(o => {
@@ -762,21 +763,31 @@ function loadStats() {
     });
 
     const tbody = document.getElementById('kitchenTableBody');
-    if (Object.keys(itemMap).length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2">目前沒有統計資料</td></tr>';
-        return;
-    }
 
-    tbody.innerHTML = Object.entries(itemMap).map(([name, qty]) => `
+    // 3. Render rows based on Product Order
+    // Filter to show only items with count > 0, but maintain product sort order
+    const rows = products.map((p, index) => {
+        const qty = itemMap[p.name] || 0;
+        if (qty === 0) return ''; // Skip 0 count items
+
+        return `
         <tr>
-            <td>${name}</td>
+            <td>${index + 1}. ${p.name}</td>
             <td style="font-weight:bold; font-size:1.2rem;">${qty}</td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
+
+    if (!rows.trim()) {
+        tbody.innerHTML = '<tr><td colspan="2">目前沒有統計資料</td></tr>';
+    } else {
+        tbody.innerHTML = rows;
+    }
 }
 
-function printStats() {
+async function printStats() {
     // 1. Calculate Data (Mirroring loadStats logic)
+    const products = await Store.getProducts();
     const itemMap = {};
     const activeOrders = currentOrders.filter(o => o.status === 'new' || o.status === 'processing' || o.status === 'confirmed');
 
@@ -789,7 +800,9 @@ function printStats() {
         }
     });
 
-    if (Object.keys(itemMap).length === 0) {
+    const hasData = products.some(p => (itemMap[p.name] || 0) > 0);
+
+    if (!hasData) {
         alert('目前沒有統計資料可列印');
         return;
     }
@@ -802,6 +815,17 @@ function printStats() {
         alert('請允許開啟彈出視窗以進行列印');
         return;
     }
+
+    const rows = products.map((p, index) => {
+        const qty = itemMap[p.name] || 0;
+        if (qty === 0) return '';
+        return `
+            <tr>
+                <td>${index + 1}. ${p.name}</td>
+                <td class="qty">${qty}</td>
+            </tr>
+        `;
+    }).join('');
 
     // 3. Write Clean HTML
     win.document.write(`
@@ -835,12 +859,7 @@ function printStats() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${Object.entries(itemMap).map(([name, qty]) => `
-                        <tr>
-                            <td>${name}</td>
-                            <td class="qty">${qty}</td>
-                        </tr>
-                    `).join('')}
+                    ${rows}
                 </tbody>
             </table>
 
